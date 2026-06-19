@@ -135,7 +135,7 @@
   }
 
   :where(a, button, input, textarea, select, summary):focus-visible {
-    outline: 2px solid var(--color-ring);
+    outline: 2px solid var(--color-ring) !important;
     outline-offset: 3px;
   }
 
@@ -347,6 +347,10 @@
     color: inherit;
     background: transparent;
     padding: 0;
+  }
+  .dark & pre code {
+    color: inherit;
+    background: transparent;
   }
   & pre span {
     color: oklch(0.28 0.035 70) !important;

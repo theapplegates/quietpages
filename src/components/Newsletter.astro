@@ -19,7 +19,7 @@ const { compact = false } = Astro.props;
           Join
         </button>
       </form>
-      <p data-newsletter-done class="mt-2 text-xs text-primary" hidden>Thanks &mdash; check your inbox.</p>
+      <p data-newsletter-done class="mt-2 text-xs text-primary" role="status" hidden>Thanks &mdash; check your inbox.</p>
     </div>
   ) : (
     <section data-newsletter-cta class="border-t border-border/60 pt-16 pb-10">
@@ -40,7 +40,7 @@ const { compact = false } = Astro.props;
             Subscribe
           </button>
         </form>
-        <p data-newsletter-done class="mt-3 text-sm text-primary" hidden>Thanks &mdash; check your inbox to confirm.</p>
+        <p data-newsletter-done class="mt-3 text-sm text-primary" role="status" hidden>Thanks &mdash; check your inbox to confirm.</p>
         <p class="mt-3 text-xs text-muted-foreground">Free. Unsubscribe in one click.</p>
       </div>
     </section>

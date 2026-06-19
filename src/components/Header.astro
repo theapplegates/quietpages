@@ -29,13 +29,17 @@ const iconClass = isHome
       <span class={`font-serif text-xl font-semibold tracking-tight ${isHome ? "home-header-brand" : ""}`}>{SITE.name}</span>
     </a>
 
-    <nav class="hidden items-center gap-8 md:flex">
+    <nav class="hidden items-center gap-8 md:flex" aria-label="Primary navigation">
       {
         nav.map((item) => {
           const exact = item.to === "/";
           const active = exact ? current === "/" : current.startsWith(item.to);
           return (
-            <a href={item.to} class={`text-sm ${active ? activeClass : inactiveClass}`}>
+            <a
+              href={item.to}
+              class={`text-sm ${active ? activeClass : inactiveClass}`}
+              aria-current={active ? "page" : undefined}
+            >
               {item.label}
             </a>
           );
@@ -48,6 +52,8 @@ const iconClass = isHome
         type="button"
         data-search-toggle
         aria-label="Search"
+        aria-controls="site-search"
+        aria-expanded="false"
         class={iconClass}
       >
         <Icon name="search" class="h-4 w-4" />
@@ -72,6 +78,8 @@ const iconClass = isHome
         type="button"
         data-menu-toggle
         aria-label="Menu"
+        aria-controls="mobile-menu"
+        aria-expanded="false"
         class={`${iconClass} md:hidden`}
       >
         <span data-menu-icon="menu"><Icon name="menu" class="h-4 w-4" /></span>
@@ -80,7 +88,7 @@ const iconClass = isHome
     </div>
   </div>
 
-  <div data-search-panel class="border-t border-border/60 bg-background text-foreground" hidden>
+  <div id="site-search" data-search-panel class="border-t border-border/60 bg-background text-foreground" hidden>
     <form action="/blog" method="get" class="mx-auto max-w-6xl px-5 py-3">
       <input
         data-search-input
@@ -92,17 +100,22 @@ const iconClass = isHome
     </form>
   </div>
 
-  <div data-menu-panel class="border-t border-border/60 bg-background text-foreground md:hidden" hidden>
-    <nav class="mx-auto flex max-w-6xl flex-col gap-1 px-5 py-3">
+  <div id="mobile-menu" data-menu-panel class="border-t border-border/60 bg-background text-foreground md:hidden" hidden>
+    <nav class="mx-auto flex max-w-6xl flex-col gap-1 px-5 py-3" aria-label="Mobile navigation">
       {
-        nav.map((item) => (
-          <a
-            href={item.to}
-            class="rounded-md px-2 py-2 text-sm text-muted-foreground hover:bg-muted hover:text-foreground"
-          >
-            {item.label}
-          </a>
-        ))
+        nav.map((item) => {
+          const exact = item.to === "/";
+          const active = exact ? current === "/" : current.startsWith(item.to);
+          return (
+            <a
+              href={item.to}
+              class={`rounded-md px-2 py-2 text-sm hover:bg-muted hover:text-foreground ${active ? "text-foreground" : "text-muted-foreground"}`}
+              aria-current={active ? "page" : undefined}
+            >
+              {item.label}
+            </a>
+          );
+        })
       }
     </nav>
   </div>
@@ -125,6 +138,13 @@ const iconClass = isHome
     menuPanel.hidden = !open;
     menuIcon.hidden = open;
     closeIcon.hidden = !open;
+    menuToggle?.setAttribute("aria-expanded", String(open));
+  };
+
+  const setSearch = (open) => {
+    searchPanel.hidden = !open;
+    searchToggle?.setAttribute("aria-expanded", String(open));
+    if (open) searchInput?.focus();
   };
 
   const setThemeIcon = () => {
@@ -143,11 +163,24 @@ const iconClass = isHome
   window.addEventListener("scroll", setHeaderScrolled, { passive: true });
 
   searchToggle?.addEventListener("click", () => {
-    searchPanel.hidden = !searchPanel.hidden;
-    if (!searchPanel.hidden) searchInput?.focus();
+    setSearch(searchPanel.hidden);
   });
 
   menuToggle?.addEventListener("click", () => setMenu(menuPanel.hidden));
+
+  document.addEventListener("keydown", (event) => {
+    if (event.key !== "Escape") return;
+
+    if (!searchPanel.hidden) {
+      setSearch(false);
+      searchToggle?.focus();
+    }
+
+    if (!menuPanel.hidden) {
+      setMenu(false);
+      menuToggle?.focus();
+    }
+  });
 
   themeToggle?.addEventListener("click", () => {
     const next = !document.documentElement.classList.contains("dark");
