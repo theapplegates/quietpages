@@ -1,12 +1,8 @@
 {
   "name": "quiet-pages",
-<<<<<<< HEAD
   "version": "2.1.0",
-=======
-  "version": "1.0.0",
->>>>>>> a7377f7 (stuff jxl)
   "description": "A quiet Astro magazine theme for essays, field notes, and long-form writing.",
-  "private": true,
+  "private": "true",
   "license": "MIT",
   "type": "module",
   "engines": {
