@@ -240,6 +240,148 @@
     background-color: var(--color-muted);
     color: var(--color-foreground);
   }
+
+  /* Archive filters: pill triggers over <details> menus, so a blog with dozens of
+     tags keeps a single-row filter bar instead of a wall of chips. */
+  .filter-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    border: 1px solid var(--color-border);
+    border-radius: 9999px;
+    padding: 0.45rem 0.8rem;
+    font-size: 0.75rem;
+    line-height: 1;
+    color: var(--color-foreground);
+    cursor: pointer;
+    list-style: none;
+    transition:
+      background-color 150ms ease,
+      border-color 150ms ease;
+  }
+
+  .filter-pill::-webkit-details-marker {
+    display: none;
+  }
+
+  .filter-pill:hover {
+    background-color: var(--color-muted);
+  }
+
+  [data-filter-menu][open] > .filter-pill,
+  [data-filter-menu][data-active] > .filter-pill {
+    border-color: var(--color-foreground);
+  }
+
+  .filter-pill-label {
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--color-muted-foreground);
+  }
+
+  .filter-pill-value {
+    max-width: 9rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--color-muted-foreground);
+  }
+
+  [data-filter-menu][data-active] .filter-pill-value {
+    color: var(--color-foreground);
+    font-weight: 600;
+  }
+
+  .filter-popover {
+    position: absolute;
+    left: 0;
+    top: calc(100% + 0.4rem);
+    z-index: 40;
+    display: grid;
+    gap: 0.1rem;
+    min-width: 13rem;
+    max-width: min(18rem, calc(100vw - 2.5rem));
+    max-height: min(20rem, 60svh);
+    overflow-y: auto;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    background-color: var(--color-popover);
+    color: var(--color-popover-foreground);
+    padding: 0.35rem;
+    box-shadow: 0 18px 40px -22px oklch(0 0 0 / 0.35);
+  }
+
+  /* Near the viewport edge the menus drop below the whole bar instead of the pill,
+     so a long option label never pushes off-screen. */
+  @media (width < 40rem) {
+    [data-filter-menu] {
+      position: static;
+    }
+
+    .filter-popover {
+      right: 0;
+      min-width: 0;
+      max-width: none;
+    }
+  }
+
+  .facet {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    width: 100%;
+    border-radius: var(--radius-sm);
+    padding: 0.45rem 0.5rem;
+    font-size: 0.8125rem;
+    text-align: left;
+    color: var(--color-muted-foreground);
+    transition:
+      background-color 150ms ease,
+      color 150ms ease;
+  }
+
+  .facet:hover {
+    background-color: var(--color-muted);
+    color: var(--color-foreground);
+  }
+
+  /* Weight as well as ink, so the selection never rests on colour alone. */
+  .facet[aria-current="true"] {
+    color: var(--color-foreground);
+    font-weight: 600;
+  }
+
+  /* Options that would return nothing recede but stay clickable, so the menu
+     never changes length under the pointer. */
+  .facet[data-empty] {
+    opacity: 0.45;
+  }
+
+  .facet-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .facet-count {
+    font-family: var(--font-mono);
+    font-size: 0.6875rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .filter-reset {
+    border-radius: 9999px;
+    padding: 0.45rem 0.7rem;
+    font-size: 0.75rem;
+    line-height: 1;
+    color: var(--color-primary);
+  }
+
+  .filter-reset:hover {
+    background-color: var(--color-muted);
+  }
 }
 
 @utility font-serif {

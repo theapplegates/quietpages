@@ -2,6 +2,22 @@
 
 All notable changes to Quiet Pages will be documented in this file.
 
+## [2.2.0] - 2026-08-12
+
+### Added
+
+- Added `CUSTOMIZATION.md`, a guide covering site settings, authors, taxonomies, frontmatter, the homepage, archive filters, search, article pages, prose and code, images, icons, forms, routes, theme tokens, dark mode, fonts, SEO, and a pre-launch checklist.
+- Added `chevron-down` to the shared `Icon` component.
+- Added live option counts to the archive filters, each measured against the other active filters and the search query, so a row shows what selecting it would return.
+- Added a `Clear filters` control to the archive that appears once a category or tag is active.
+
+### Changed
+
+- Bumped the theme package version to `2.2.0`.
+- Replaced the archive category and tag chip rows with two pill dropdown menus, so blogs with many tags keep a single-row filter bar. Each menu row remains a real link to its taxonomy page before JavaScript enhancement.
+- Archive filter menus now open one at a time and close on selection, outside click, or `Escape`; the selected row is marked with `aria-current` and font weight rather than colour alone.
+- Archive filter options with no matching posts are dropped at build time, and options that would return nothing under the current filters are dimmed instead of removed.
+
 ## [2.1.0] - 2026-07-01
 
 ### Added
