@@ -7,7 +7,7 @@
   "type": "module",
   "scripts": {
     "dev": "astro dev",
-    "build": "astro build && node scripts/prune-unused-assets.mjs",
+    "build": "astro build && node scripts/prune-unused-assets.mjs && pagefind --site dist",
     "preview": "astro preview",
     "cloudinary:breakpoints": "NODE_OPTIONS=--max-old-space-size=8192 node --env-file=.env scripts/cloudinary-breakpoints.mjs",
     "format": "prettier --write ."
@@ -24,17 +24,17 @@
     "tailwindcss": "^4.3.1"
   },
   "devDependencies": {
+    "pagefind": "^1.5.2",
     "prettier": "^3.8.4",
     "vite": "^8.1.2"
   },
   "allowScripts": {
     "esbuild@0.27.7": true,
-    "esbuild@0.28.1": true,
-    "esbuild@0.25.12": true,
     "sharp@0.34.5": true,
     "sharp@0.35.3": true,
     "node-addon-api@8.9.0": true,
     "node-gyp@12.4.0": true,
-    "fsevents@2.3.3": true
+    "fsevents@2.3.3": true,
+    "esbuild@0.28.2": true
   }
 }

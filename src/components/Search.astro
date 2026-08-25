@@ -1,0 +1,14 @@
+---
+import SearchModal from "./SearchModal";
+import { sortedPosts } from "../lib/blog-data.js";
+import { NAVIGATION } from "../config/theme.config.ts";
+
+// A few recent posts for the modal's idle state; full-text search itself
+// is served by the Pagefind index built into /pagefind at build time.
+const recent = (await sortedPosts())
+  .slice(0, 5)
+  .map((post) => ({ slug: post.slug, title: post.title }));
+---
+
+<!-- Search must be listening for ⌘K from first paint, hence client:load. -->
+<SearchModal client:load nav={NAVIGATION} recent={recent} />

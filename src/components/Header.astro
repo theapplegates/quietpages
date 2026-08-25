@@ -45,9 +45,7 @@ const iconClass = isHome
       <button
         type="button"
         data-search-toggle
-        aria-label="Search"
-        aria-controls="site-search"
-        aria-expanded="false"
+        aria-label="Search (⌘K)"
         class={iconClass}
       >
         <Icon name="search" class="h-4 w-4" />
@@ -82,18 +80,6 @@ const iconClass = isHome
     </div>
   </div>
 
-  <div id="site-search" data-search-panel class="border-t border-border/60 bg-background text-foreground" hidden>
-    <form action="/blog" method="get" class="mx-auto max-w-6xl px-5 py-3">
-      <input
-        data-search-input
-        name="q"
-        aria-label="Search essays, field notes, interviews"
-        placeholder="Search essays, field notes, interviews..."
-        class="w-full border-0 bg-transparent py-2 font-serif text-lg outline-none placeholder:text-muted-foreground"
-      />
-    </form>
-  </div>
-
   <div id="mobile-menu" data-menu-panel class="border-t border-border/60 bg-background text-foreground md:hidden" hidden>
     <nav class="mx-auto flex max-w-6xl flex-col gap-1 px-5 py-3" aria-label="Mobile navigation">
       {
@@ -117,8 +103,6 @@ const iconClass = isHome
 
 <script>
   const searchToggle = document.querySelector("[data-search-toggle]");
-  const searchPanel = document.querySelector("[data-search-panel]");
-  const searchInput = document.querySelector("[data-search-input]");
   const menuToggle = document.querySelector("[data-menu-toggle]");
   const menuPanel = document.querySelector("[data-menu-panel]");
   const menuIcon = document.querySelector('[data-menu-icon="menu"]');
@@ -130,8 +114,7 @@ const iconClass = isHome
 
   const setPanelOpen = () => {
     if (!homeHeader) return;
-    const open = !searchPanel.hidden || !menuPanel.hidden;
-    homeHeader.dataset.panelOpen = String(open);
+    homeHeader.dataset.panelOpen = String(!menuPanel.hidden);
   };
 
   const setMenu = (open) => {
@@ -139,13 +122,6 @@ const iconClass = isHome
     menuIcon.hidden = open;
     closeIcon.hidden = !open;
     menuToggle?.setAttribute("aria-expanded", String(open));
-    setPanelOpen();
-  };
-
-  const setSearch = (open) => {
-    searchPanel.hidden = !open;
-    searchToggle?.setAttribute("aria-expanded", String(open));
-    if (open) searchInput?.focus();
     setPanelOpen();
   };
 
@@ -164,19 +140,15 @@ const iconClass = isHome
   setHeaderScrolled();
   window.addEventListener("scroll", setHeaderScrolled, { passive: true });
 
+  // SearchModal (mounted in BaseLayout) listens for this event; it also handles ⌘K itself.
   searchToggle?.addEventListener("click", () => {
-    setSearch(searchPanel.hidden);
+    document.dispatchEvent(new CustomEvent("quiet:search"));
   });
 
   menuToggle?.addEventListener("click", () => setMenu(menuPanel.hidden));
 
   document.addEventListener("keydown", (event) => {
     if (event.key !== "Escape") return;
-
-    if (!searchPanel.hidden) {
-      setSearch(false);
-      searchToggle?.focus();
-    }
 
     if (!menuPanel.hidden) {
       setMenu(false);
