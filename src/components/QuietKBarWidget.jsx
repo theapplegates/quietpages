@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
-import { KBarProvider, KBar, useKBar } from '@kbar/core';
-import '@kbar/core/dist/index.css';
+import kbar from 'kbar';
+const { KBarProvider, KBar, useKBar } = kbar;
 import { actions } from './QuietKBarActions';
 
 function QuietKBarControls() {

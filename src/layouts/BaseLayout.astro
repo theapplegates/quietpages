@@ -1,4 +1,5 @@
 ---
+import QuietKBarWidget from "../components/QuietKBarWidget.jsx";
 import "../styles.css";
 import Header from "../components/Header.astro";
 import Footer from "../components/Footer.astro";
@@ -93,5 +94,6 @@ const ogImageUrl = absoluteUrl(ogImage);
       <Footer flush={flushFooter} />
       <Search />
     </div>
+	<QuietKBarWidget client:only />
   </body>
 </html>
