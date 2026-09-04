@@ -208,16 +208,18 @@ async function main() {
     public_id: publicId,
     unique_filename: false,
     overwrite: true,
+    invalidate: true,
     resource_type: "image",
     responsive_breakpoints: [
       {
         create_derived: false,
-        breakpoints: {
-          min_width: 200,
-          max_width: 2000,
-          max_images: 10,
-          auto_optimal_breakpoints: true,
-        },
+        // Calculate the shared widths against the WebP fallback rather than
+        // against an uploaded JPEG or PNG original.
+        format: "webp",
+        min_width: 200,
+        max_width: 2000,
+        bytes_step: 20_000,
+        max_images: 10,
       },
     ],
   });
@@ -246,7 +248,7 @@ async function main() {
   // component reads src/alt/width/height/breakpoints plus either `devices`
   // (art direction: per-device crops via <source media>) or `sizes` (simple
   // responsive). It rejects an empty alt, so replace the alt text before
-  // publishing.
+  // publishing. Decorative images may intentionally use alt="".
   const intrinsicWidth = result.width;
   const intrinsicHeight = result.height;
   const choice = await chooseDevices(sizesArg, devicesArg);

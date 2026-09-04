@@ -64,7 +64,16 @@ Optional, and worth knowing about:
 - `updated` adds an "updated" line to the article byline and drives `dateModified` in the article's JSON-LD and `lastmod` in the sitemap.
 - `seoTitle` and `seoDescription` override the `<title>` and meta description without changing the visible headline or standfirst. `canonical` overrides the canonical URL, for a piece first published elsewhere.
 - `excerpt` does more work than it looks: it is the standfirst under the headline, the card description, the meta description, the RSS item description, and half of what the archive search matches on. Write it as a sentence, not a keyword list.
-- `imageCredit` renders a caption and photo credit under the article's lead image. It takes `author`, `authorUrl`, `sourceUrl`, an optional `caption`, and a `source` that defaults to `Unsplash`. Supply it or omit it entirely — the schema requires the URLs once the object is present.
+- `imageCredit` renders a caption and photo credit under the article's lead image. The simplest form accepts the Markdown from Unsplash's **Copy credit** button and an optional caption:
+
+  ```yaml
+  imageCredit:
+    caption: "A white windmill beside a curved bridge."
+    credit: >-
+      Photo by [Jason Wo](https://unsplash.com/@jasonwjc?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText) on [Unsplash](https://unsplash.com/photos/XZglYsOg1C4?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText)
+  ```
+
+  QuietPages parses the photographer and photo links and changes their tracking source to `quiet_pages`. The original `author`, `authorUrl`, `source`, and `sourceUrl` fields remain supported for non-Unsplash sources or existing content.
 - `thumbnailAlt` is the alt text for the lead image on the article page. Cards and the homepage render the same image decoratively with empty alt, since the headline beside them already carries the meaning.
 
 ## Homepage
@@ -140,6 +149,19 @@ Each code block also gets a copy button, injected on load by the script in the p
 ## Images
 
 Post images live beside the MDX file and go through Astro's image pipeline. `thumbnail` is typed as `image()` in the schema, so it must be a local file next to the post — a remote URL will fail validation. Relative images in the body (`![alt](./detail.jpg)`) are optimized too.
+
+For an Unsplash image inside an MDX article, paste the copied credit into the reusable component instead of separating the photographer's name and URLs by hand:
+
+```mdx
+import UnsplashCredit from "../../../components/UnsplashCredit.astro";
+
+<UnsplashCredit
+  caption="Fishing boats gathered in a harbour at sunrise."
+  credit={`Photo by [Aliaksei Lepik](https://unsplash.com/@vegfrt?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText) on [Unsplash](https://unsplash.com/photos/goa_pgKhAnI?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText)`}
+/>
+```
+
+The caption is optional. The component validates both Unsplash URLs during the build and renders the photographer profile and photo-page links with the site's tracking source.
 
 Each surface requests its own sizes rather than sharing one preset: the lead image is served up to 1600px, list thumbnails at 220px, grid cards at up to 480px, and the social image is generated separately at 1200×630 WebP through `getImage`. If you change a card's layout, revisit its `widths` and `sizes` in the same edit — a stale `sizes` is the usual cause of a blurry or oversized card.
 
