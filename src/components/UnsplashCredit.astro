@@ -1,0 +1,29 @@
+---
+import { parseUnsplashCredit, punctuateCaption } from "../lib/unsplash-credit.js";
+
+type Props = {
+  /** Markdown copied directly from Unsplash's Copy credit button. */
+  credit: string;
+  /** Optional words displayed before the attribution. */
+  caption?: string;
+  utmSource?: string;
+  class?: string;
+};
+
+const {
+  credit,
+  caption = "",
+  utmSource = "quiet_pages",
+  class: className,
+} = Astro.props;
+const parsed = parseUnsplashCredit(credit, { utmSource });
+const captionText = punctuateCaption(caption);
+---
+
+<p class:list={["unsplash-credit", className]}>
+  {captionText && <span>{captionText} </span>}
+  <span>
+    Photo by <a href={parsed.authorUrl} target="_blank" rel="noopener noreferrer">{parsed.author}</a>{" "}
+    on{" "}<a href={parsed.sourceUrl} target="_blank" rel="noopener noreferrer">Unsplash</a>.
+  </span>
+</p>

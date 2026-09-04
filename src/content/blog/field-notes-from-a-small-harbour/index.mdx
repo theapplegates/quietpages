@@ -9,17 +9,16 @@ thumbnail: ./cover.jpg
 thumbnailAlt: "Fishing boats gathered in a harbour at sunrise."
 imageCredit:
   caption: "Fishing boats gathered in a harbour at sunrise."
-  author: "Philippe BONTEMPS"
-  authorUrl: "https://unsplash.com/@philippeb?utm_source=quiet_pages&utm_medium=referral"
-  source: "Unsplash"
-  sourceUrl: "https://unsplash.com/photos/j9sWBE4jeWQ?utm_source=quiet_pages&utm_medium=referral"
+  credit: >-
+    Photo by [Philippe BONTEMPS](https://unsplash.com/@philippeb?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText) on [Unsplash](https://unsplash.com/photos/j9sWBE4jeWQ?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText)
 ---
 
 import Picture from "../../../components/Picture.astro";
+import UnsplashCredit from "../../../components/UnsplashCredit.astro";
 
 <Picture
   src="assets/images/aliaksei-lepik-goa_pgKhAnI-unsplash"
-  alt="The iconic Golden Gate Bridge, in San Francisco, California"
+  alt="Fishing boats gathered in a harbour at sunrise"
   width="2433"
   height="3632"
   devices="1200|40|original,992|60|16:9,768|70|4:3,0|100|1:1"
@@ -27,4 +26,7 @@ import Picture from "../../../components/Picture.astro";
   picture-class="responsive-picture"
 />
 
-<p class="unsplash-credit">Fishing boats gathered in a harbour at sunrise. Photo by <a href="https://unsplash.com/@vegfrt?utm_source=quiet_pages&utm_medium=referral" target="_blank" rel="noopener noreferrer">Aliaksei Lepik</a> on <a href="https://unsplash.com/photos/goa_pgKhAnI?utm_source=quiet_pages&utm_medium=referral" target="_blank" rel="noopener noreferrer">Unsplash</a>.</p>
+<UnsplashCredit
+  caption="Fishing boats gathered in a harbour at sunrise."
+  credit={`Photo by [Aliaksei Lepik](https://unsplash.com/@vegfrt?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText) on [Unsplash](https://unsplash.com/photos/goa_pgKhAnI?utm_source=unsplash&utm_medium=referral&utm_content=creditCopyText)`}
+/>

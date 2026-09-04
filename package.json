@@ -9,7 +9,7 @@
     "dev": "astro dev",
     "build": "astro build && node scripts/prune-unused-assets.mjs && pagefind --site dist",
     "preview": "astro preview",
-    "cloudinary:breakpoints": "NODE_OPTIONS=--max-old-space-size=8192 node --env-file=.env scripts/cloudinary-breakpoints.mjs",
+    "cloudinary:breakpoints": "node --env-file-if-exists=.env scripts/cloudinary-breakpoints.mjs",
     "format": "prettier --write ."
   },
   "dependencies": {

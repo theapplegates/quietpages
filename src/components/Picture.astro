@@ -70,12 +70,21 @@ const {
 
 const pictureClassName = pictureClass ?? pictureClassKebab;
 
-if (!alt) {
-  throw new Error(`Cloudinary <Picture> requires an alt for src: "${src}".`);
+if (typeof alt !== "string") {
+  throw new Error(`Cloudinary <Picture> requires an alt attribute for src: "${src}".`);
 }
 
 const intrinsicWidth = Number(width);
 const intrinsicHeight = Number(height);
+
+if (
+  !Number.isFinite(intrinsicWidth) ||
+  intrinsicWidth <= 0 ||
+  !Number.isFinite(intrinsicHeight) ||
+  intrinsicHeight <= 0
+) {
+  throw new Error(`Cloudinary <Picture> requires positive width and height for src: "${src}".`);
+}
 
 // Accept an array, a { breakpoints: [...] } wrapper, a JSON array string
 // ("[200, 382]"), or a comma-separated string of widths ("200, 382, 527").
@@ -165,8 +174,6 @@ const normalizedBreakpoints = [
   ...new Set(
     breakpointList
       .map(getBreakpointWidth)
-      .filter((breakpoint) => Number.isFinite(breakpoint) && breakpoint > 0)
-      .concat(intrinsicWidth)
       .filter((breakpoint) => Number.isFinite(breakpoint) && breakpoint > 0)
   ),
 ].sort((a, b) => a - b);
@@ -285,34 +292,41 @@ const createDeviceSrcSet = (format: CloudinaryFormat, device: DeviceSpec) =>
 
 // --- Simple responsive mode (single crop, one srcset per format) ---
 const simpleSizes = sizes ? String(sizes) : "";
-const simpleFallbackSrc = createUrl("webp", intrinsicWidth);
+const largestBreakpoint = normalizedBreakpoints.at(-1)!;
+const simpleFallbackSrc = createUrl("webp", largestBreakpoint);
+const simpleFallbackSrcSet = createSrcSet("webp");
 
 // --- Art-direction mode (per-device crops via <source media>) ---
 let artSizes = "";
 let fallbackSrc = simpleFallbackSrc;
+let fallbackSrcSet = simpleFallbackSrcSet;
 let fallbackWidth = intrinsicWidth;
 let fallbackHeight = intrinsicHeight;
 let artSources:
-  | { media: string; type: string; sizes: string; srcset: string }[]
+  | { media?: string; type: string; sizes: string; srcset: string }[]
   | undefined;
 
 if (hasDevices && deviceList) {
   const sortedAsc = [...deviceList].sort((a, b) => a.minWidth - b.minWidth);
   const smallestDevice = sortedAsc[0];
-  const sourceDevices = sortedAsc.slice(1).sort((a, b) => b.minWidth - a.minWidth);
+  const sourceDevices = [...sortedAsc].sort((a, b) => b.minWidth - a.minWidth);
 
   artSizes = buildSizesFromDevices(deviceList);
   artSources = sourceDevices.flatMap((d) =>
     FORMAT_ORDER.map((format) => ({
-      media: `(min-width: ${d.minWidth}px)`,
+      // The smallest selected crop is the unqualified final source. This
+      // gives phones a responsive srcset instead of a single large <img>.
+      media: d === smallestDevice ? undefined : `(min-width: ${d.minWidth}px)`,
       type: MIME_TYPES[format],
       sizes: artSizes,
       srcset: createDeviceSrcSet(format, d),
     }))
   );
 
-  fallbackWidth = Math.min(intrinsicWidth, maxDeviceWidth(smallestDevice));
+  const smallestWidths = deviceWidths(smallestDevice);
+  fallbackWidth = smallestWidths.at(-1)!;
   fallbackSrc = createUrl("webp", fallbackWidth, deviceTransformations(smallestDevice));
+  fallbackSrcSet = createDeviceSrcSet("webp", smallestDevice);
   fallbackHeight = ratioHeight(
     fallbackWidth,
     smallestDevice.aspectRatio,
@@ -341,6 +355,7 @@ if (hasDevices && deviceList) {
   <img
     {...attrs}
     src={hasDevices ? fallbackSrc : simpleFallbackSrc}
+    srcset={hasDevices ? fallbackSrcSet : simpleFallbackSrcSet}
     alt={alt}
     width={hasDevices ? fallbackWidth : intrinsicWidth}
     height={hasDevices ? fallbackHeight : intrinsicHeight}
