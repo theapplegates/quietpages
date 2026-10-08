@@ -201,7 +201,7 @@ The search palette is [src/components/chrome/SearchDialog.astro](./src/component
 
 ## The Archive
 
-[src/pages/blog/index.astro](./src/pages/blog/index.astro) renders every published post as a grid of cards grouped by year, newest first, then filters it in the browser. A year disappears while a filter leaves it empty, and its count follows the filters. Three controls combine in the toolbar above the grid: a search field, a **Section** menu, and a **Tag** menu.
+[src/pages/blog/index.astro](./src/pages/blog/index.astro) renders every published post as a grid of cards, newest first, then filters it in the browser. Three controls combine in the toolbar above the grid: a search field, a **Section** menu, and a **Tag** menu.
 
 - The search field filters as you type, matching titles, excerpts, sections, tags, and author names. Every word must appear. The text it matches is the card's `data-search` attribute, built in [src/components/blog/PostCard.astro](./src/components/blog/PostCard.astro).
 - Each menu is a native `<details>` element. One opens at a time, and it closes on a selection, a click outside, or `Escape`, which returns focus to the pill.

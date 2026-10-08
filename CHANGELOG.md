@@ -20,7 +20,7 @@ All notable changes to Quiet Pages are documented here.
 - Added an image lightbox to article pages, opened from plain Markdown images and the new `Figure` component.
 - Added syntax highlighting with light and dark themes.
 - Archive search now updates as you type and matches sections, tags, and authors.
-- The archive is a grid of cards grouped by year, with one toolbar for search and filters.
+- The archive is a grid of cards, newest first, with one toolbar for search and filters.
 - Redesigned the archive, section, tag, author, About, Contact, and 404 pages.
 - Redesigned the footer with section, magazine, and social links.
 - Forms run in demo mode until an endpoint is set in `siteConfig.forms`.

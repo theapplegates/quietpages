@@ -16,7 +16,7 @@ Quiet Pages is a free Astro theme for independent magazines, personal journals, 
 - A homepage with a full-bleed photo hero, a lead essay, the latest writing with a section filter, and section tiles
 - Posts written in MDX, one folder per post with its cover beside it, with sections, tags, and authors checked against the config at build time
 - A `Ctrl/⌘ + K` search palette on every page, with the most recent posts before the first keystroke
-- An archive grouped by year that searches as you type across titles, excerpts, sections, tags, and authors, with section and tag filters kept in the URL
+- An archive of cards that searches as you type across titles, excerpts, sections, tags, and authors, with section and tag filters kept in the URL
 - Article pages with a byline, a wide lead image with its photo credit, a serif reading column, and an "On this page" rail
 - A share sheet with X, LinkedIn, Facebook, email, WhatsApp, Telegram, Threads, Bluesky, Mastodon, Reddit, and Pinterest plus a copy-link field, an author note, previous and next cards, and "Keep reading" suggestions
 - Images dropped into a post with plain Markdown, an optional `Figure` with caption and credit, and a lightbox with arrows, swipe, and keyboard support
