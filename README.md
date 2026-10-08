@@ -1,53 +1,56 @@
-# QuietPages - Astro Magazine Theme
+# Quiet Pages - Astro Magazine Theme
 
-[![Quiet Pages theme preview](./preview.webp)](https://quietpages-eta.vercel.app/)
+[![Quiet Pages theme preview](./preview.webp)](https://quietpages.xocoweb.workers.dev/)
 
-![Version 2.2.0](https://img.shields.io/badge/Version-2.2.0-111827?style=for-the-badge)
-![Astro 7](https://img.shields.io/badge/Astro-7-ff5d01?style=for-the-badge&logo=astro&logoColor=white)
-![Tailwind CSS 4](https://img.shields.io/badge/Tailwind_CSS-4-38bdf8?style=for-the-badge&logo=tailwindcss&logoColor=white)
-![MDX](https://img.shields.io/badge/MDX-enabled-1b1f24?style=for-the-badge&logo=mdx&logoColor=white)
-![License MIT](https://img.shields.io/badge/License-MIT-111827?style=for-the-badge)
+[![Astro 7](https://img.shields.io/badge/Astro-7-FF5D01?style=for-the-badge&logo=astro&logoColor=white)](https://astro.build/)
+[![Tailwind CSS 4](https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-Configured-3178C6?style=for-the-badge&logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-84cc16?style=for-the-badge)](./LICENSE)
 
-**Preview:** [quietpages-eta.vercel.app](https://quietpages-eta.vercel.app/)
+**Live preview:** https://quietpages.xocoweb.workers.dev/
 
-QuietPages is a calm Astro theme for independent magazines, personal journals, and long-form editorial sites. It keeps the reading experience simple and fast while including the pieces a production-ready publication needs: archives, taxonomy pages, author pages, RSS, sitemap, structured metadata, and self-hosted fonts.
+Quiet Pages is a free Astro theme for independent magazines, personal journals, and long-form writing. It pairs a calm, misty photographic hero and a serif reading column with the tools a publication needs, so the writing stays the focus. Posts are MDX files validated by Astro content collections, the settings live in a few config files, and the output is fully static.
 
 ## Features
 
-- Editorial homepage with a full-bleed visual lead story
-- Blog archive with search, category filters, tag filters, and load-more pagination
-- Static category, tag, and author pages that remain crawlable without JavaScript
-- MDX blog posts powered by Astro content collections
-- Category, tag, and author index pages
-- Article pages with breadcrumbs, table of contents, sharing actions, related posts, and adjacent navigation
-- RSS feed, XML sitemap, and dynamic robots.txt
-- Canonical URLs, Open Graph tags, Twitter card metadata, and article JSON-LD
-- Light and dark modes with system preference support
-- Self-hosted Inter, Fraunces, and JetBrains Mono fonts
-- Local demo author avatars
-- Accessible landmarks, visible focus states, skip link, and reduced-motion handling
-- Responsive images through Astro's image pipeline
-- Configurable newsletter and contact forms, plus a custom 404 page
+- A homepage with a full-bleed photo hero, a lead essay, the latest writing with a section filter, and section tiles
+- Posts written in MDX, one folder per post with its cover beside it, with sections, tags, and authors checked against the config at build time
+- A `Ctrl/⌘ + K` search palette on every page, with the most recent posts before the first keystroke
+- An archive grouped by year that searches as you type across titles, excerpts, sections, tags, and authors, with section and tag filters kept in the URL
+- Article pages with a byline, a wide lead image with its photo credit, a serif reading column, and an "On this page" rail
+- A share sheet with X, LinkedIn, Facebook, email, WhatsApp, Telegram, Threads, Bluesky, Mastodon, Reddit, and Pinterest plus a copy-link field, an author note, previous and next cards, and "Keep reading" suggestions
+- Images dropped into a post with plain Markdown, an optional `Figure` with caption and credit, and a lightbox with arrows, swipe, and keyboard support
+- Syntax highlighting with light and dark themes and a copy button on every code block
+- Sections, Tags, and Contributors index pages, plus a page for every section, tag, and author
+- Author pages with a portrait, role, bio, and everything they have published
+- A subscribe panel above the footer, and newsletter and contact forms that run in demo mode until you add an endpoint
+- About, Contact, and a designed 404 page
+- Light and dark modes that follow the system until a reader picks one, applied before first paint
+- A header that hides while you scroll down and returns solid on the way up, a mobile menu, a reading progress bar, and a skip link
+- Entrance motion in CSS only, switched off for reduced-motion users
+- Responsive, optimized images through Astro's image pipeline, with social cards cropped from each post's cover
+- RSS, sitemap, `robots.txt`, canonical URLs, Open Graph and Twitter/X cards, and JSON-LD for the site, posts, collections, profiles, and breadcrumbs
+- Self-hosted Newsreader, Geist, and Geist Mono, a local Lucide icon set, and design tokens in one stylesheet
+- Static output with no framework islands and only a few small scripts
+- Landmarks, labelled controls, visible focus states, and keyboard support throughout
 
 ## Tech Stack
 
-- Astro 7
+- Astro 7 with MDX
 - Tailwind CSS 4 via the Vite plugin
-- MDX
-- Astro content collections
-- Self-hosted `woff2` fonts
+- TypeScript, Astro content collections
+- `@astrojs/sitemap`, `@astrojs/rss`, Sharp
+- Self-hosted Newsreader, Geist, and Geist Mono, Lucide and Bootstrap Icons, each with its license notice
+
+## Requirements
+
+- Node.js `22.12.0` or newer
+- npm
 
 ## Getting Started
 
-Install dependencies:
-
 ```bash
 npm install
-```
-
-Start the development server:
-
-```bash
 npm run dev
 ```
 
@@ -57,114 +60,42 @@ Build for production:
 npm run build
 ```
 
-The build runs Astro and then prunes unreferenced original raster files from `dist/_astro` via [`scripts/prune-unused-assets.mjs`](./scripts/prune-unused-assets.mjs).
-
 Preview the production build locally:
 
 ```bash
 npm run preview
 ```
 
-## Theme Setup
-
-The main theme settings live in [`src/config/theme.config.ts`](./src/config/theme.config.ts):
-
-- `SITE.name`
-- `SITE.description`
-- `NAVIGATION`
-- `CONTACT`
-- `FORMS`
-- `SOCIAL_LINKS`
-- authors, categories, and tags
-
-Blog query helpers live in [`src/lib/blog-data.js`](./src/lib/blog-data.js).
-
-Set your production URL before deploying:
+Before shipping a change, run type checking, the production build, and the formatter check together:
 
 ```bash
-SITE_URL=https://your-domain.com
+npm run release:check
 ```
-
-You can also use:
-
-```bash
-PUBLIC_SITE_URL=https://your-domain.com
-```
-
-This keeps canonical URLs, Open Graph URLs, RSS links, robots.txt, and the sitemap aligned with the deployed domain.
-
-## Content
-
-Blog posts live in [`src/content/blog`](./src/content/blog). Each post uses an `index.mdx` file inside its own folder, with local images stored beside the content.
-
-Required frontmatter is validated in [`src/content.config.js`](./src/content.config.js):
-
-- `title`
-- `excerpt`
-- `date`
-- `category`
-- `tags`
-- `author`
-- `thumbnail`
-- `thumbnailAlt`
-
-Optional frontmatter:
-
-- `seoTitle`
-- `seoDescription`
-- `canonical`
-- `updated`
-- `readingTime`
-- `featured`
-- `draft`
-
-If `readingTime` is omitted, QuietPages estimates it automatically from the MDX body.
-
-## SEO
-
-QuietPages includes:
-
-- unique page titles and descriptions
-- canonical URLs generated from the configured site URL
-- Open Graph and Twitter card metadata
-- article JSON-LD on post pages
-- XML sitemap at `/sitemap.xml`
-- RSS feed at `/rss.xml`
-- robots.txt with a sitemap reference
-
-Main SEO files:
-
-- [`src/layouts/BaseLayout.astro`](./src/layouts/BaseLayout.astro)
-- [`src/pages/sitemap.xml.js`](./src/pages/sitemap.xml.js)
-- [`src/pages/robots.txt.js`](./src/pages/robots.txt.js)
-- [`src/pages/rss.xml.js`](./src/pages/rss.xml.js)
-
-## Images and Assets
-
-The repository includes [`preview.webp`](./preview.webp) for the README preview. Content images live beside each MDX post, and shared theme assets live in [`src/assets`](./src/assets).
-
-Fonts are self-hosted in [`public/fonts`](./public/fonts). Replace those files and the `@font-face` declarations in [`src/styles.css`](./src/styles.css) if you want a different type system.
-
-Author avatars are local SVG files in [`public/avatars`](./public/avatars). Replace them with your own images and update the author entries in [`src/config/theme.config.ts`](./src/config/theme.config.ts).
-
-## Forms
-
-The contact and newsletter forms use the actions configured in [`src/config/theme.config.ts`](./src/config/theme.config.ts). By default those actions are empty, so the theme stays static and provider-free without shipping insecure `mailto:` form submissions. Replace `FORMS.contact.action` and `FORMS.newsletter.action` with HTTPS form provider endpoints when deploying a real site.
 
 ## Customization
 
-See [CUSTOMIZATION.md](./CUSTOMIZATION.md) for site settings, authors, categories and tags, post frontmatter, the homepage, the archive filters, search, article pages, prose and code, images, icons, forms, routes, theme tokens, dark mode, fonts, SEO, and a pre-launch checklist.
+See [CUSTOMIZATION.md](./CUSTOMIZATION.md) for site settings, authors, sections and tags, posts and their frontmatter, the homepage and its hero image, search and the archive, article pages, forms, the theme's design tokens, fonts, icons, and dark mode.
 
-The short version:
+Set `siteConfig.siteUrl` in [src/config/site.ts](./src/config/site.ts) before building — canonical URLs, social images, the sitemap, the RSS feed, `robots.txt`, and the structured data are all derived from it. The build is static, so any host that serves a directory works: `vercel.json` is included for Vercel and `wrangler.jsonc` for Cloudflare Workers, and Netlify, GitHub Pages, and object storage behind a CDN need no configuration beyond `npm run build`.
 
-- Edit theme colors, typography tokens, radii, and prose styles in [`src/styles.css`](./src/styles.css).
-- Update authors, categories, tags, site defaults, navigation, contact details, social links, and form endpoints in [`src/config/theme.config.ts`](./src/config/theme.config.ts).
-- Replace example posts in [`src/content/blog`](./src/content/blog) with your own MDX content.
+## Content
 
-## Deployment
+Posts live in [src/content/blog](./src/content/blog), one folder per post holding an `index.mdx` and its cover image, validated by the schema in [src/content.config.ts](./src/content.config.ts). The folder name is the post's URL slug, and its `category`, `tags`, and `author` must match entries in [src/config/taxonomy.ts](./src/config/taxonomy.ts) and [src/config/authors.ts](./src/config/authors.ts).
 
-QuietPages works anywhere Astro can deploy. For Vercel, Netlify, or another static host, set `SITE_URL` to the production domain before building so metadata and feeds use absolute URLs.
+The bundled posts and contributors are fictional demo content. The author portraits are Pexels stock photos unrelated to the names they illustrate, and the cover images come from Unsplash, credited in each post's frontmatter. Replace them, and the homepage photograph, with your own writing, people, and photographs before launch.
+
+## Support
+
+Quiet Pages is free and provided as-is. Bug reports and questions are welcome as [GitHub issues](https://github.com/xocothemes/quietpages/issues); custom design and feature work is not included. See [CONTRIBUTING.md](./CONTRIBUTING.md) to propose a change, and [CHANGELOG.md](./CHANGELOG.md) for release history.
 
 ## License
 
-This project is licensed under the [MIT License](./LICENSE).
+MIT — free for personal and commercial projects. See [LICENSE](./LICENSE), which also lists the licenses of the bundled fonts and icons.
+
+## Credits
+
+- [Newsreader](https://github.com/productiontype/Newsreader) by Production Type, under the SIL Open Font License
+- [Geist and Geist Mono](https://github.com/vercel/geist-font) by Vercel, under the SIL Open Font License
+- [Lucide](https://lucide.dev/), under the ISC License
+- [Bootstrap Icons](https://icons.getbootstrap.com/), under the MIT License
+- Photography from [Unsplash](https://unsplash.com/) and [Pexels](https://www.pexels.com/)

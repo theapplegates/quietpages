@@ -1,252 +1,426 @@
 # Customization Guide
 
-Use this guide when adapting Quiet Pages for a real publication. [README.md](./README.md) covers installation and the shape of the project; this document covers what to change, where, and what depends on it.
+Use this guide when adapting Quiet Pages for a real publication.
 
 ## Site Settings
 
-Edit [src/config/theme.config.ts](./src/config/theme.config.ts) first. It is the theme's single source of truth for site metadata, navigation, contact details, form endpoints, social links, authors, categories, and tags. Almost nothing in the theme hardcodes these — components read them through [src/lib/blog-data.js](./src/lib/blog-data.js), which re-exports the config alongside the post query helpers.
+Edit [src/config/site.ts](./src/config/site.ts) first. It holds the magazine's name, the default metadata, the canonical domain, the language and date locale, the social image, the contact email, the form endpoints, and the social links.
 
-`SITE` carries the name, description, locale, language, and repository URL. The name fills the header wordmark, the footer, every page title suffix, and the RSS channel; the description is the default meta description and the footer standfirst.
+Set `siteConfig.siteUrl` before building for production. Canonical URLs, social image URLs, the RSS feed, `robots.txt`, the sitemap, and JSON-LD all derive from it.
 
-`NAVIGATION` is a flat array that fills both the desktop nav and the mobile sheet. Entries can be added or reordered freely. A link is marked current when the path starts with its `to` value, so `/blog` also highlights while reading a post — the one exception is `/`, which is matched exactly.
+| Key              | What it controls                                                                           |
+| ---------------- | ------------------------------------------------------------------------------------------ |
+| `name`           | The wordmark in the header and footer, the `<title>` suffix on every page, the feed title  |
+| `title`          | The homepage `<title>` and its social title                                                |
+| `description`    | The default meta description, the feed description, and the line under the footer wordmark |
+| `siteUrl`        | The production domain, without a trailing slash                                            |
+| `language`       | The `lang` attribute, the feed language, and the language in structured data               |
+| `locale`         | The Open Graph locale, for example `en_US`                                                 |
+| `dateLocale`     | How dates are written, for example `en-US` or `en-GB`                                      |
+| `socialImage`    | The Open Graph and Twitter/X image for pages without their own, a path in `public/`        |
+| `wordsPerMinute` | The reading speed used to estimate read time when a post has no `readingTime`              |
+| `email`          | The address on the Contact page and behind the mail icon in the footer                     |
+| `forms`          | The newsletter and contact form endpoints; see [Forms](#forms)                             |
+| `socials`        | The icon links in the footer and the chips on the Contact page                             |
 
-`CONTACT` holds the public email and social handle used by the contact page and the footer social row. `SOCIAL_LINKS` is the footer row itself; each entry's `icon` must resolve in [src/components/Icon.astro](./src/components/Icon.astro) — see [Icons](#icons).
+Each social link takes a `label`, an `href`, and an `icon`, which is a file name from [src/icons/bootstrap](./src/icons/bootstrap) such as `twitter-x`, `bluesky`, `github`, `mastodon`, `instagram`, or `threads`.
 
-### Production URL
+`navigation` in the same file is the header and mobile menu. A link is marked as the current page when the path starts with its `href`, so Writing stays highlighted while reading a post. `footerLinks` is the footer's "The magazine" column; the footer's Sections column comes from [src/config/taxonomy.ts](./src/config/taxonomy.ts).
 
-Set the production domain before building:
+The header and footer show `name` as a serif wordmark. The favicon is [public/favicon.svg](./public/favicon.svg), which has the accent color written into it. The footer's copyright line and type credit are in [src/components/chrome/SiteFooter.astro](./src/components/chrome/SiteFooter.astro).
 
-```bash
-SITE_URL=https://your-domain.com npm run build
-```
-
-`PUBLIC_SITE_URL` works too. **Set it in the shell or in your host's environment variables, not only in a `.env` file.** The two consumers read it from different places: [astro.config.mjs](./astro.config.mjs) reads `process.env`, which a `.env` file does not populate, while [src/config/theme.config.ts](./src/config/theme.config.ts) reads `import.meta.env`, which it does. Configure only a `.env` file and you get a build where the sitemap, robots, and RSS point at your domain while canonical and Open Graph URLs still point at the fallback — the worst of both. If you would rather not depend on the environment at all, replace the fallback string in both files with your domain.
+The About and Contact pages are written directly in [src/pages/about.astro](./src/pages/about.astro), including its `principles`, and [src/pages/contact.astro](./src/pages/contact.astro). Rewrite both.
 
 ## Authors
 
-Authors live in the `authors` array in [src/config/theme.config.ts](./src/config/theme.config.ts). Each entry needs a `slug`, `name`, `bio`, `longBio`, and `avatar`:
+Contributors live in [src/config/authors.ts](./src/config/authors.ts):
 
-- `slug` is what a post's `author` frontmatter refers to, and it becomes `/authors/<slug>`.
-- `bio` is the one-liner under the author card at the foot of an article and in the sidebar.
-- `longBio` is the standfirst on the author page.
-- `avatar` is a path under `public/`. The bundled files are initials-based SVGs in [public/avatars](./public/avatars) — replace them with photographs and keep them square, since they are rendered as circles at 28px, 40px, 56px, and 96px.
+```ts
+import elenaMarch from "@/assets/authors/elena-march.jpg";
 
-An `author` value with no matching entry is not a build error: the byline, the author card, and the avatar are simply skipped, and the post still publishes. That keeps a renamed author from breaking a build, but it also means a typo fails quietly — check an article page after renaming a slug.
+export const authors = [
+  {
+    slug: "elena-march",
+    name: "Elena March",
+    role: "Editor",
+    bio: "Writer and editor covering design, craft, and slow technology.",
+    longBio: "Elena March writes about the quiet edges of design and technology. ...",
+    avatar: elenaMarch,
+    photoCredit: { name: "Photographer / Pexels", url: "https://www.pexels.com/photo/..." },
+  },
+] as const satisfies readonly Author[];
+```
 
-`authors[0]` has a second job: [src/components/Sidebar.astro](./src/components/Sidebar.astro) uses it as the masthead editor. Order the array with that in mind, or edit the component to pick a specific slug.
+| Field         | Notes                                                                             |
+| ------------- | --------------------------------------------------------------------------------- |
+| `slug`        | What a post's `author` refers to, and the URL: `/authors/<slug>/`                 |
+| `name`        | Shown in bylines, cards, and the author page                                      |
+| `role`        | Shown under the name in the article byline, the author note, and the author pages |
+| `bio`         | One line, on the Contributors page and in the author page's meta description      |
+| `longBio`     | The standfirst on the author page and the author note at the end of every article |
+| `avatar`      | An imported image; see below                                                      |
+| `photoCredit` | Optional. A record of where the portrait came from; it is not shown on the site   |
 
-## Categories and Tags
+Portraits are images in [src/assets/authors](./src/assets/authors), imported at the top of `authors.ts` so Astro can optimize them. Use square photos of at least 256x256 pixels; they are cropped to circles and rendered from 24px to 128px, at 1x and 2x. The author page uses a crop of the portrait as its social image.
 
-Both live in [src/config/theme.config.ts](./src/config/theme.config.ts) as `{ slug, name }` pairs, and both are authoritative — the config, not the content, decides what exists:
+A post's `author` is validated against the slugs in this file, so a typo or a removed author fails the build instead of publishing a post without a byline. Every author gets a page, even before they have published, and the array order is the order on the Contributors and About pages.
 
-- Routes are generated from the config, so `/categories/<slug>` and `/tags/<slug>` pages exist only for configured entries.
-- The archive filter menus, the footer sections list, and the sidebar lists are all built from the config.
-- A post whose `category` or `tags` value is not in the config still publishes and is still searchable, but its label falls back to the raw slug and it has no taxonomy page to link to.
+## Sections and Tags
 
-So when you add a category or tag to a post, add it to the config in the same commit. When you remove one, check the demo posts still reference only what remains.
+Sections and tags live in [src/config/taxonomy.ts](./src/config/taxonomy.ts), and the config is authoritative: it, not the content, decides what exists. In the code sections are called `categories`, and their pages live at `/categories/<slug>/`.
 
-Two smaller consequences worth knowing:
+```ts
+export const categories = [
+  {
+    slug: "essays",
+    name: "Essays",
+    description: "Long-form arguments about writing, reading, and making things for the web.",
+  },
+  // ...
+] as const satisfies readonly Category[];
 
-- The footer's **Sections** column shows the first five categories, in declared order. Reorder the array to change which five appear.
-- [src/pages/sitemap.xml.js](./src/pages/sitemap.xml.js) lists every configured category, tag, and author regardless of whether anything is published under it, so a leftover tag becomes a crawlable, empty page in your sitemap. Prune the config rather than leaving unused entries behind.
+export const tags = [
+  { slug: "writing", name: "Writing" },
+  // ...
+] as const satisfies readonly Term[];
+```
 
-## Post Frontmatter
+- A post's `category` and `tags` are validated against these slugs with `z.enum`, so a typo fails the build. Add a section or tag to the config before using it in a post.
+- Section and tag pages are only generated for terms with at least one published post, and the archive menus, the homepage filter and section tiles, and the Sections page skip empty terms too.
+- The footer lists every configured section, so remove a section from the config rather than leaving it empty.
+- Order in `categories` is the order everywhere sections are listed. Tags keep their order in the archive menu; the Tags page sorts them by post count.
+- A section's `description` is the lead on its page, its line on the Sections page, and part of its meta description.
 
-Every post is a folder under [src/content/blog](./src/content/blog) containing `index.mdx` and its images. The schema in [src/content.config.js](./src/content.config.js) validates the frontmatter, and the folder name becomes the slug and the URL, `/blog/<folder>`.
+To rename a slug, change it in the config and in every post that uses it; `npm run check` lists any post you missed.
 
-Required: `title`, `excerpt`, `date`, `category`, `tags`, `author`, `thumbnail`, `thumbnailAlt`.
+## Writing Posts
 
-Optional, and worth knowing about:
+Each post is a folder in [src/content/blog](./src/content/blog) holding an `index.mdx` (or `index.md`) and the images it uses:
 
-- `readingTime` overrides the estimate. Left out, it is counted from the MDX body at build time at 220 words per minute, ignoring fenced code blocks and HTML tags — change `wordsPerMinute` in [src/lib/blog-data.js](./src/lib/blog-data.js) to adjust.
-- `featured: true` promotes the post to the homepage lead. See [Homepage](#homepage).
-- `draft: true` hides the post from every listing, taxonomy page, feed, sitemap, and route.
-- `updated` adds an "updated" line to the article byline and drives `dateModified` in the article's JSON-LD and `lastmod` in the sitemap.
-- `seoTitle` and `seoDescription` override the `<title>` and meta description without changing the visible headline or standfirst. `canonical` overrides the canonical URL, for a piece first published elsewhere.
-- `excerpt` does more work than it looks: it is the standfirst under the headline, the card description, the meta description, the RSS item description, and half of what the archive search matches on. Write it as a sentence, not a keyword list.
-- `imageCredit` renders a caption and photo credit under the article's lead image. It takes `author`, `authorUrl`, `sourceUrl`, an optional `caption`, and a `source` that defaults to `Unsplash`. Supply it or omit it entirely — the schema requires the URLs once the object is present.
-- `thumbnailAlt` is the alt text for the lead image on the article page. Cards and the homepage render the same image decoratively with empty alt, since the headline beside them already carries the meaning.
+```text
+src/content/blog/building-tools-that-disappear/
+|-- index.mdx
+`-- cover.jpg
+```
+
+The folder name is the URL: `src/content/blog/building-tools-that-disappear/` becomes `/blog/building-tools-that-disappear/`. Frontmatter is validated by [src/content.config.ts](./src/content.config.ts):
+
+```yaml
+---
+title: "Building tools that disappear"
+excerpt: "The best software for thinking gets out of the way."
+date: 2026-04-30
+updated: 2026-05-02
+category: "engineering"
+tags: ["tools", "minimalism", "web"]
+author: "samuel-okafor"
+thumbnail: ./cover.jpg
+thumbnailAlt: "A quiet desk setup with code, a plant, and a cup within reach."
+imageCredit:
+  caption: "A desk in the morning."
+  author: "Photographer Name"
+  authorUrl: "https://unsplash.com/@photographer"
+  source: "Unsplash"
+  sourceUrl: "https://unsplash.com/photos/..."
+featured: false
+draft: false
+---
+```
+
+| Field            | Notes                                                                                         |
+| ---------------- | --------------------------------------------------------------------------------------------- |
+| `title`          | Required. The headline, the `<title>`, and the card and search title                          |
+| `excerpt`        | Required. The standfirst, the card text, the meta description, the feed item, and searched    |
+| `date`           | Required. The publication date; posts are listed newest first                                 |
+| `updated`        | Shown as "Updated" in the byline and used as `dateModified` in the JSON-LD                    |
+| `category`       | Required. A section slug from `src/config/taxonomy.ts`                                        |
+| `tags`           | Tag slugs from `src/config/taxonomy.ts`. Defaults to none                                     |
+| `author`         | Required. An author slug from `src/config/authors.ts`                                         |
+| `thumbnail`      | Required. A local image beside the post: the card image, the lead image, and the social card  |
+| `thumbnailAlt`   | Required. Alt text for the lead image on the article page                                     |
+| `imageCredit`    | A caption and photo credit under the lead image. `source` defaults to `Unsplash`              |
+| `readingTime`    | Minutes. Left out, it is estimated from the body, ignoring code blocks and HTML tags          |
+| `featured`       | Makes the post a candidate for the homepage lead essay                                        |
+| `draft`          | `true` keeps the post out of every page, listing, the feed, the search index, and the sitemap |
+| `seoTitle`       | Overrides the `<title>` without changing the headline                                         |
+| `seoDescription` | Overrides the meta description without changing the standfirst                                |
+| `canonical`      | An absolute URL, for a piece first published elsewhere                                        |
+
+Start the body's headings at `##`; the title is the page's only `h1`.
 
 ## Homepage
 
-[src/pages/index.astro](./src/pages/index.astro) is a page, not a set of configurable blocks — the hero headline and standfirst are written directly in the markup, so edit them there. Three parts are worth knowing about:
+The homepage is assembled in [src/pages/index.astro](./src/pages/index.astro) from sections in [src/components/home](./src/components/home), with copy in [src/config/home.ts](./src/config/home.ts):
 
-**The hero** uses [src/assets/autumn-scene.webp](./src/assets/autumn-scene.webp) as a full-bleed image behind the wordmark, with the header rendered transparent over it. Replace the file, or swap the import for another asset. It is the page's LCP image, so it is loaded eagerly with `fetchpriority="high"` and served through Astro's pipeline at four widths — keep those attributes on whatever replaces it. The transparent-header treatment is driven by `data-home-header` and the rules in [src/styles.css](./src/styles.css); if your replacement image is light, adjust the two gradient overlays in the hero rather than the header rules, since the header borrows its white text from the overlay.
+| Section           | Component                     | Config key                   |
+| ----------------- | ----------------------------- | ---------------------------- |
+| Hero              | `Hero.astro`                  | `homeConfig.hero`            |
+| Lead essay        | `LeadStory.astro`             | the `featured` flag in posts |
+| Latest writing    | `LatestPosts.astro`           | `homeConfig.latest`          |
+| Browse by section | `SectionTiles.astro`          | `homeConfig.sections`        |
+| Subscribe panel   | `chrome/SubscribePanel.astro` | `subscribeConfig`            |
 
-**The featured block** shows the newest post flagged `featured: true`, falling back to the newest post overall — so the slot is never empty on a site that has flagged nothing. Flag more than one and the newest flagged post wins; the rest simply appear in the grid below.
+**The hero.** In `hero.title`, words wrapped in `*asterisks*` are set in italic: `"An independent magazine on *writing*, *design*, and the *slow web*."` The `primary` button links to the lead essay, and `secondary` takes a label and a link. To change the photograph behind it, see [The Hero Image](#the-hero-image).
 
-**The Latest grid** lists every post except the featured one, six at a time, with a row of category buttons above it. Those buttons filter client-side, hold no URL state, and are separate from the archive's filters — this is a homepage teaser, not an archive. The cap of six appears twice, as `index >= 6` in the markup and `visible < 6` in the script; change both together, or the button filtering and the initial render will disagree.
+**The lead essay** is the newest post with `featured: true`, or the newest post if none is flagged. Flag more than one and the newest flagged post wins; the others appear in the grid.
 
-## The Archive and Its Filters
+**Latest writing** lists every post except the lead. `latest.count` sets how many cards show at once, for "All" and for each section filter. The filter has a button for every section with a post in the grid; it works in place, keeps no URL state, and is hidden without JavaScript, when the first `count` posts show.
 
-[src/pages/blog/index.astro](./src/pages/blog/index.astro) renders every published post as a list, then filters it in the browser. Three controls compose with `AND`: a search field, a **Category** menu, and a **Tag** menu.
+**Browse by section** is a row of tiles, one per section with a post, each showing the cover of that section's newest post with the section name and post count over it. Below `64rem` the row scrolls sideways. The Sections page lists the same sections with their descriptions, using `SectionIndex.astro`.
 
-The filters are pill dropdowns rather than chip rows, so a publication with dozens of tags keeps a one-row filter bar. Each menu is a native `<details>` element, which is what gives you the toggle, the keyboard behaviour, and the focus handling for free; the page's own script adds the parts the browser does not have — one menu open at a time, close on selection, close on outside click, and close on `Escape` with focus returned to the pill.
+**The subscribe panel** sits above the footer on every page except Contact and the 404, and the header's Subscribe button jumps to it. Its copy is `subscribeConfig` in `home.ts`. Pass `subscribe={false}` to `BaseLayout` to hide it on another page.
 
-Each row carries a count measured against the _other_ active filters, so it reports what selecting it would return rather than a fixed total. A row that would return nothing is dimmed to 45% instead of being removed, so the menu does not change length while it is being used. Options with no published post behind them are dropped at build time, so no row is a dead end.
+Remove a component from `index.astro` to drop its section.
 
-Every row is a real link to its taxonomy page. Without JavaScript the menus still open and the rows navigate to `/categories/<slug>` or `/tags/<slug>`; with JavaScript the click is intercepted and filters in place. Selecting the active row again clears that filter, and a **Clear filters** button appears while either menu is active.
+## The Hero Image
 
-State lives in the URL as `?q=&cat=&tag=&page=`, pushed with `history.pushState`, so a filtered view is shareable and the browser's Back button walks the filter history. An unrecognised `cat` or `tag` in the URL is ignored rather than producing an empty list. This is also how the header search field works: it is a plain form that submits to `/blog?q=...`.
+The homepage hero is a full-bleed photograph of misty hills, [src/assets/hero-mist.jpg](./src/assets/hero-mist.jpg), imported at the top of [src/components/home/Hero.astro](./src/components/home/Hero.astro). The headline sits in the mist at the top of the photo in the normal ink color, and the hills fill the bottom of the screen. To replace it, put your image in `src/assets` and change the import:
 
-`pageSize` at the top of the page script sets how many posts the list reveals at a time (5 by default) and what **Load more** adds.
+```astro
+import heroImage from "@/assets/your-photo.jpg";
+```
 
-To add a third dimension — by author, say — five things need to line up:
+- Pick a landscape photo at least 2500 pixels wide with a pale, quiet upper half, such as sky, fog, or water, so dark type stays readable. It is anchored to the bottom (`object-bottom`) and cropped to fill the screen.
+- It is the page's largest image, so it loads with `loading="eager"` and `fetchpriority="high"` and is served from 640 to 2600 pixels wide. Keep those attributes on whatever replaces it.
+- The photo is decorative, with empty alt text, since the headline carries the meaning.
+- The `.hero-shade` gradient in the component's style block fades the top of the photo into `--canvas`, which keeps the text readable on narrow screens where the hills climb higher. In dark mode the photo is dimmed and the shade fades from the dark canvas instead. A busier photo needs a longer fade; adjust the gradient stops rather than the text colors.
 
-1. Emit the value as a `data-` attribute on the card in [src/components/PostCard.astro](./src/components/PostCard.astro), next to `data-category` and `data-tags`.
-2. Add a `<details>` menu whose rows carry `data-filter="author"` and `data-value="<slug>"`, following the two already there.
-3. Add an entry to `emptyLabels` in the page script, which supplies the pill's text when nothing is selected.
-4. Add the comparison to `matchesState`, which is the one place filtering is decided — the counts, the empty state, and the pagination all run through it.
-5. Add the parameter to `writeUrl` and `stateFromUrl` so it survives a reload.
-
-The click handling, the counts, the pill label, and the reset button are all keyed off `data-filter` and need no further changes.
+The header sits transparent at the top of every page and turns solid once the page scrolls. It hides while the reader scrolls down and returns when they scroll up or tab into it. To use a photo hero on another page, pull the section up behind the header with `-mt-(--header-h)` and `pt-(--header-h)`, as `Hero.astro` does.
 
 ## Search
 
-Search is entirely static and client-side, with no index file and no network request. Each card carries `data-search`, built in [src/components/PostCard.astro](./src/components/PostCard.astro) from the post's title and excerpt, lowercased; the archive matches the query as a substring against that string and ANDs the result with the two menus.
+The search palette is [src/components/chrome/SearchDialog.astro](./src/components/chrome/SearchDialog.astro), included on every page by `BaseLayout.astro`. It opens with the search button in the header, `Ctrl/⌘ + K`, or `/` when the cursor is not in a text field. Any element with a `data-search-open` attribute opens it too, like the "Search the archive" button on the 404 page. Without JavaScript the header button is a plain link to the archive.
 
-Two consequences to be aware of before you rely on it:
+- The index is `/search-index.json`, built from [src/pages/search-index.json.ts](./src/pages/search-index.json.ts). It holds each published post's title, excerpt, section, tags, author, and date, not the full text, so it stays small. It is fetched the first time the palette opens, or as soon as a reader hovers or focuses a search button.
+- Before the first keystroke the palette lists the five most recent posts.
+- Every word in the query must match somewhere. A word in the title scores 8, in the section or tags 4, in the author's name 2, and in the excerpt 1; the whole query in the title adds 4. Ties go to the newer post, and the top eight are shown. Matching ignores case and accents.
+- The last row, "Search the archive for …", opens the archive with the query filled in.
+- Arrow keys move through the results, `Enter` opens one, and `Escape` or a click on the backdrop closes the palette and returns focus to whatever opened it.
 
-- **Only titles and excerpts are matched** — not tags, categories, authors, or article bodies. To widen it, append those values to `searchable` in `PostCard.astro`; the archive picks up whatever is in the attribute with no further changes.
-- **The corpus is the rendered page.** The archive ships every published post's markup, which is what makes search free, and also what sets the ceiling: comfortable into the low hundreds of posts, at which point either paginate the archive server-side or move to a generated index — [Pagefind](https://pagefind.app/) is the usual next step and is deliberately not a dependency here.
+`MAX_RESULTS` and `RECENT_COUNT` at the top of the palette's script set the number of results and recent posts. To index another field, add it to `SearchEntry` in `search-index.json.ts` and to the `search` function in the palette.
 
-Results update on submit rather than on every keystroke. To search as you type, listen for `input` on the query field in addition to `submit` on the form; the render path is already idempotent.
+## The Archive
+
+[src/pages/blog/index.astro](./src/pages/blog/index.astro) renders every published post as a grid of cards grouped by year, newest first, then filters it in the browser. A year disappears while a filter leaves it empty, and its count follows the filters. Three controls combine in the toolbar above the grid: a search field, a **Section** menu, and a **Tag** menu.
+
+- The search field filters as you type, matching titles, excerpts, sections, tags, and author names. Every word must appear. The text it matches is the card's `data-search` attribute, built in [src/components/blog/PostCard.astro](./src/components/blog/PostCard.astro).
+- Each menu is a native `<details>` element. One opens at a time, and it closes on a selection, a click outside, or `Escape`, which returns focus to the pill.
+- Each option shows how many posts it would return given the other active filters and the query. Options that would return nothing are dimmed, and options with no published post behind them are left out at build time.
+- Every option is a real link to its section or tag page, so without JavaScript the menus still work as navigation and the whole list is shown.
+- Selecting the active option again clears it, and **Clear filters** appears while a section or tag is selected.
+- The state lives in the URL as `?q=&cat=&tag=&page=`, so a filtered view can be shared and the Back button walks through it. An unknown section or tag in the URL is ignored. The search palette's archive row and the site's `SearchAction` structured data both link here with `?q=`.
+
+`pageSize` at the top of the page script sets how many posts show at a time and how many **Show more** adds; it is `9`, three full rows on desktop.
+
+To add another filter, such as author:
+
+1. Add a `data-` attribute with the value to both card variants in `PostCard.astro`, next to `data-category` and `data-tags`.
+2. Add a `<details data-filter-menu>` menu whose options carry `data-filter="author"` and `data-value="<slug>"`, with a `data-filter-label="author"` element in its pill, following the two already there.
+3. Add the key to the `State` and `FilterKey` types and to `emptyLabels`.
+4. Add the comparison to `matches`, which decides what every count, the empty state, and the pagination see.
+5. Add the parameter to `stateFromUrl` and `writeUrl`, and clear it in the **Clear filters** handler.
 
 ## Article Pages
 
-[src/pages/blog/[slug].astro](./src/pages/blog/%5Bslug%5D.astro) assembles the reading page. Most of it follows from the frontmatter, but several parts are generated:
+[src/pages/blog/[slug].astro](./src/pages/blog/[slug].astro) assembles the reading page from the frontmatter:
 
-- **Contents** are built from the `##` and `###` headings Astro extracts while rendering, so nothing is maintained by hand. [src/components/TableOfContents.astro](./src/components/TableOfContents.astro) renders no block at all when there are no headings, and marks the current section with an IntersectionObserver. Change the `filter` on `headings` to include `####`, or to restrict the rail to `##` only.
-- **Related posts** are scored, not chosen: two points for sharing the category, one for each shared tag, top three. Adjust the weights in `relatedPosts` in [src/lib/blog-data.js](./src/lib/blog-data.js).
-- **Previous and next** follow publication order, newest to oldest, across the whole archive rather than within a category.
-- **The reading progress bar** is the hairline at the very top of the viewport, driven by a scroll listener in the page's script.
-- **Sharing** is three plain controls — X, LinkedIn, and a copy-link button. No third-party script and no tracking pixel is loaded. The links are built at build time from the canonical URL and rewritten to `window.location.href` on load, so a post served from a preview domain shares its actual address. If the clipboard API is unavailable, the copy button falls back to a hidden textarea and `execCommand`.
-- **Comments** are a placeholder card, not an integration. Replace the block near the end of the article column with your provider's embed — Giscus, Disqus, or your own — and note that most of them will want the post slug as the thread key.
+- **The header** has breadcrumbs, the title, the excerpt as a standfirst, the author's portrait, name, and role, the date, the updated date, and the reading time.
+- **The lead image** is the `thumbnail` at 16:9, wider than the text, with the `imageCredit` caption under it.
+- **The reading column** is set in Newsreader, about 42rem wide.
+- **On this page** lists the body's `##` and `###` headings in a rail from `80rem`, and highlights the one being read. It appears when a post has at least two headings. Change the filter in [src/components/blog/TableOfContents.astro](./src/components/blog/TableOfContents.astro) to include `####`.
+- **Tags** link to their tag pages.
+- **The share sheet**, [src/components/blog/ShareSheet.astro](./src/components/blog/ShareSheet.astro), is a native `<dialog>` opened by the Share buttons in the byline and at the end of the article, or by any element with `data-share-open`. It lists seven services, with Bluesky, Mastodon, Reddit, and Pinterest behind **More**, and a copy-link field. Every target is a plain link built from the canonical URL, so no third-party script is loaded. Add or reorder entries in `targets` and `extraTargets`. The Share buttons are hidden without JavaScript.
+- **The author note** shows the author's `longBio` and links to their page.
+- **Previous and next** follow publication order across the whole magazine: Previous is the older post, Next the newer one.
+- **Keep reading** shows three related posts, scored in `getRelatedPosts` in [src/lib/posts.ts](./src/lib/posts.ts): two points for sharing the section, one for each shared tag, newest first on a tie.
+- **The progress bar** is the accent hairline at the top of the viewport.
+
+There are no comments. To add them, place your provider's embed in `[slug].astro`, for example after the author note; most providers key a thread by the page URL or `post.slug`. Load its script only on article pages, and mention it in your privacy notice.
 
 ## Prose and Code
 
-The article body is styled by the `prose-article` utility in [src/styles.css](./src/styles.css), which covers paragraphs, `h2`/`h3`, lists, links, blockquotes, images, rules, inline code, and code blocks in both colour schemes. Because it is defined with `@utility`, it can be applied to any element — the About page uses it for its body copy.
+The article body is styled by the `prose-article` utility in [src/styles/global.css](./src/styles/global.css): paragraphs, `##` and `###` headings, lists, links, blockquotes set as large italic pull quotes, images, captions, horizontal rules set as three dots, inline code, code blocks, and callouts. It works on any element; the About page uses it for its body copy.
 
-A `callout` utility is available for MDX asides:
+A callout is a tinted aside, written as HTML in the MDX:
 
 ```mdx
-<div class="callout">A short aside, tinted with the primary colour and ruled on the left.</div>
+<div class="callout">A short aside, set apart from the text around it.</div>
 ```
 
-Astro's default Shiki highlighting runs, but `prose-article` deliberately flattens it: `pre span` is forced to a single ink colour in both schemes, so code reads as quiet typography rather than a colour chart. Delete those two `& pre span` rules to get syntax colours back, and set `markdown.shikiConfig` in [astro.config.mjs](./astro.config.mjs) to choose the theme they come from.
-
-Each code block also gets a copy button, injected on load by the script in the post page — it wraps every `pre` in a `.code-block` div and appends the control, so nothing needs to be written into the MDX. The tooltip and copied-state styles live with the rest of `prose-article`.
+Code blocks are highlighted at build time by Shiki with the `github-light` and `github-dark-default` themes, set in `markdown.shikiConfig` in [astro.config.mjs](./astro.config.mjs). The block background follows the theme's `--surface` token in both modes. Every code block in an article gets a copy button, added by the script at the end of `[slug].astro`; it appears on hover or keyboard focus.
 
 ## Images
 
-Post images live beside the MDX file and go through Astro's image pipeline. `thumbnail` is typed as `image()` in the schema, so it must be a local file next to the post — a remote URL will fail validation. Relative images in the body (`![alt](./detail.jpg)`) are optimized too.
+Every image a post uses lives in the post's own folder, next to its `index.mdx`, and goes through Astro's image pipeline. `thumbnail` is an `image()` in the schema, so it must be a local file; a remote URL fails validation.
 
-Each surface requests its own sizes rather than sharing one preset: the lead image is served up to 1600px, list thumbnails at 220px, grid cards at up to 480px, and the social image is generated separately at 1200×630 WebP through `getImage`. If you change a card's layout, revisit its `widths` and `sizes` in the same edit — a stale `sizes` is the usual cause of a blurry or oversized card.
+**Pictures in the body.** Drop the file into the post folder and write ordinary Markdown:
 
-`npm run build` finishes by running [scripts/prune-unused-assets.mjs](./scripts/prune-unused-assets.mjs), which deletes original JPG and PNG files from `dist/_astro` that nothing in the built output references. Optimized WebP output is untouched. If you add a surface that references a raster file from somewhere the script cannot see — a hand-written HTML string, say — put the file in `public/` instead, which the script never touches.
+```md
+![A spool of waxed linen thread beside a steel ruler.](./binding-thread.jpg)
+```
+
+It is optimized at build time, set to the reading column's width, and opens in the lightbox when clicked. The alt text doubles as the lightbox caption.
+
+**Pictures with a caption.** Use `Figure`, which every MDX post can use without importing the component. Import the image itself at the top of the post, below the frontmatter:
+
+```mdx
+import printedPage from "./printed-page.jpg";
+
+<Figure
+  src={printedPage}
+  alt="Close-set lines of printed text on the page of an open book."
+  caption="A narrow measure, set close and read slowly."
+  credit="Photo by Brett Jordan on Unsplash"
+  creditUrl="https://unsplash.com/photos/LtDiekEGH0Y"
+  width="wide"
+/>
+```
+
+`alt` is required; `caption`, `credit`, and `creditUrl` are optional; `width="wide"` lets the picture break out of the reading column on large screens. The lightbox opens a full-size rendition, up to 2400 pixels wide.
+
+**The lightbox** is [src/components/blog/Lightbox.astro](./src/components/blog/Lightbox.astro), a native `<dialog>` included on every article page. Every body image in a post joins one set, in reading order: the arrows (hidden on phones, where you swipe instead), the `←` and `→` keys, and a swipe step through it, and a counter shows the position. It closes with the close button, `Escape`, or a click outside the picture, and focus returns to the image that opened it. The cover image is not part of the set.
+
+**Covers.**
+
+- Use covers at least 1600 pixels wide. The article shows them at 16:9 and cards at 3:2, cropped from the center.
+- Each place requests its own sizes, from 320 to 1600 pixels wide. The article's lead image loads eagerly with high priority; card images load lazily.
+- Cards show the cover with empty alt text, since the headline beside it carries the meaning. `thumbnailAlt` is used on the article page.
+- Every post's social card is a 1200x630 crop of its cover, generated at build time in [src/layouts/BaseLayout.astro](./src/layouts/BaseLayout.astro). Author pages use the portrait. Every other page uses `siteConfig.socialImage`, `/og-image.png`, a 1200x630 image in `public/`.
 
 ## Icons
 
-Icons are inline SVG paths in a single map in [src/components/Icon.astro](./src/components/Icon.astro), so no icon font, sprite, or package is requested. Add one by dropping its path data into the map:
+Interface icons are SVG files in [src/icons/lucide](./src/icons/lucide) (Lucide) and brand marks in [src/icons/bootstrap](./src/icons/bootstrap) (Bootstrap Icons), rendered by [src/components/ui/Icon.astro](./src/components/ui/Icon.astro):
 
-```ts
-"chevron-down": '<path d="m6 9 6 6 6-6"></path>',
+```astro
+<Icon name="arrow-right" class="size-4" />
+<Icon name="social-github" class="size-4" />
 ```
 
-Anything drawn on a 24×24 viewBox with `stroke="currentColor"` fits the existing set. An unknown name renders an empty `<svg>` rather than failing the build, which matters most for `SOCIAL_LINKS`: adding a network there without adding its icon gives you a silent blank square.
+To add an icon, save its SVG from [lucide.dev](https://lucide.dev/) into `src/icons/lucide` and use its file name, or save a brand mark from [icons.getbootstrap.com](https://icons.getbootstrap.com/) into `src/icons/bootstrap` and use it as `social-<file name>`. A name with no matching file throws an error and stops the build, so a missing icon never ships as a blank square.
 
-## Newsletter and Contact Forms
+## Forms
 
-Both forms are provider-neutral and configured in `FORMS` in [src/config/theme.config.ts](./src/config/theme.config.ts):
+The newsletter form in the subscribe panel and the form on the Contact page post to the endpoints in `siteConfig.forms`:
 
 ```ts
-newsletter: {
-  action: "https://example.com/subscribe",
-  method: "post",
-  enctype: "application/x-www-form-urlencoded",
-}
+forms: {
+  newsletter: "https://example.com/subscribe",
+  contact: "https://example.com/contact",
+},
 ```
 
-While `action` is empty — the default — the form retargets to a same-site `GET /contact` instead. That keeps the theme static and provider-free, and deliberately avoids shipping a `mailto:` form submission, which leaks the visitor's address into a URL and trips Lighthouse's best-practices audit. Fill in a real HTTPS endpoint before launch; the fields stay usable either way, so test the endpoint rather than assuming a filled form went somewhere.
+While an endpoint is empty, the default, its form runs in demo mode: it validates, clears, and shows a confirmation, but sends nothing. The confirmation says so, and without JavaScript the form is hidden, so nobody submits into nothing.
 
-[src/components/Newsletter.astro](./src/components/Newsletter.astro) has two variants: the default band at the foot of the homepage and article pages, and `compact` for the sidebar. Both read the same config, so a provider only needs wiring once.
-
-## Sidebar
-
-[src/components/Sidebar.astro](./src/components/Sidebar.astro) renders the masthead editor, the category list, popular and recent posts, the tag cloud, the compact newsletter form, and an RSS link. It is used on category pages only — the archive and tag pages run full width, and articles use their contents rail instead. Add it to another page by importing it into that page's grid.
-
-Two of its lists are simpler than their labels suggest: **Recent** is the four newest posts, and **Popular** is `popularPosts()` in [src/lib/blog-data.js](./src/lib/blog-data.js), which currently also returns the four newest. Wire it to real analytics, sort by a frontmatter flag, or drop the block — but don't ship it as-is expecting engagement data.
+Set an HTTPS endpoint from your newsletter provider or a form service and the form becomes a plain `POST` to it, with no JavaScript involved. The fields are named `email` in the newsletter form, and `name`, `email`, `topic`, and `message` in the contact form; rename them in [src/components/chrome/SubscribePanel.astro](./src/components/chrome/SubscribePanel.astro) and [src/pages/contact.astro](./src/pages/contact.astro) if your provider expects other names. The demo confirmations are the `data-success` attributes on the two forms, and demo mode is handled by [src/scripts/forms.ts](./src/scripts/forms.ts).
 
 ## Routes
 
-| Page      | Source                                                     | URL                  |
-| --------- | ---------------------------------------------------------- | -------------------- |
-| Home      | [src/pages/index.astro](./src/pages/index.astro)           | `/`                  |
-| Archive   | [src/pages/blog/index.astro](./src/pages/blog/index.astro) | `/blog`              |
-| Article   | `src/pages/blog/[slug].astro`                              | `/blog/<slug>`       |
-| Category  | `src/pages/categories/[slug].astro`                        | `/categories/<slug>` |
-| Tag       | `src/pages/tags/[slug].astro`                              | `/tags/<slug>`       |
-| Author    | `src/pages/authors/[slug].astro`                           | `/authors/<slug>`    |
-| About     | [src/pages/about.astro](./src/pages/about.astro)           | `/about`             |
-| Contact   | [src/pages/contact.astro](./src/pages/contact.astro)       | `/contact`           |
-| Not found | [src/pages/404.astro](./src/pages/404.astro)               | `/404`               |
-| Feed      | [src/pages/rss.xml.js](./src/pages/rss.xml.js)             | `/rss.xml`           |
-| Sitemap   | [src/pages/sitemap.xml.js](./src/pages/sitemap.xml.js)     | `/sitemap.xml`       |
-| Robots    | [src/pages/robots.txt.js](./src/pages/robots.txt.js)       | `/robots.txt`        |
+Every URL ends with a trailing slash (`trailingSlash: "always"` in `astro.config.mjs`). Keep internal links in that form; in development a link without the slash returns a 404.
 
-The archive is the only listing that grows without adding routes — it reveals posts in batches in the browser rather than paginating. Category, tag, and author pages render their full list. If a section outgrows one page, the taxonomy routes are where to add Astro's `paginate`.
+| Page         | Source                                                                 | URL                   |
+| ------------ | ---------------------------------------------------------------------- | --------------------- |
+| Home         | [src/pages/index.astro](./src/pages/index.astro)                       | `/`                   |
+| Archive      | [src/pages/blog/index.astro](./src/pages/blog/index.astro)             | `/blog/`              |
+| Article      | `src/pages/blog/[slug].astro`                                          | `/blog/<slug>/`       |
+| Sections     | [src/pages/categories/index.astro](./src/pages/categories/index.astro) | `/categories/`        |
+| Section      | `src/pages/categories/[slug].astro`                                    | `/categories/<slug>/` |
+| Tags         | [src/pages/tags/index.astro](./src/pages/tags/index.astro)             | `/tags/`              |
+| Tag          | `src/pages/tags/[slug].astro`                                          | `/tags/<slug>/`       |
+| Contributors | [src/pages/authors/index.astro](./src/pages/authors/index.astro)       | `/authors/`           |
+| Author       | `src/pages/authors/[slug].astro`                                       | `/authors/<slug>/`    |
+| About        | [src/pages/about.astro](./src/pages/about.astro)                       | `/about/`             |
+| Contact      | [src/pages/contact.astro](./src/pages/contact.astro)                   | `/contact/`           |
+| Not found    | [src/pages/404.astro](./src/pages/404.astro)                           | `/404.html`           |
+| Feed         | [src/pages/rss.xml.ts](./src/pages/rss.xml.ts)                         | `/rss.xml`            |
+| Search index | [src/pages/search-index.json.ts](./src/pages/search-index.json.ts)     | `/search-index.json`  |
+| Robots       | [src/pages/robots.txt.ts](./src/pages/robots.txt.ts)                   | `/robots.txt`         |
+| Sitemap      | generated by `@astrojs/sitemap`                                        | `/sitemap-index.xml`  |
 
-Replace the starter copy on the About and Contact pages with real masthead, editorial, and legal information. Neither reads its body text from config; both are ordinary pages.
+Section, tag, and author pages list every post they hold on one page. If a section outgrows that, add Astro's `paginate` to its route.
 
 ## Theme Tokens
 
-Colours, radii, fonts, base styles, component classes, and the prose utilities all live in [src/styles.css](./src/styles.css). Prefer editing the tokens near the top before touching components.
+Colors, shadows, the header height, the gutter, and the page width are CSS custom properties at the top of [src/styles/global.css](./src/styles/global.css), defined once in `:root` and again for dark mode in `:root.dark`:
 
-The palette is a shadcn-style token set written in `oklch`: `--background`, `--foreground`, `--card`, `--popover`, `--primary`, `--secondary`, `--muted`, `--accent`, `--destructive`, `--border`, `--input`, and `--ring`, each with a `-foreground` companion where one is needed. `--radius` (0.5rem) drives the four radius steps. Light values are defined on `:root`; dark mode overrides the same names under `.dark`.
+```css
+:root {
+  --canvas: #fbfdfe;
+  --surface: #ffffff;
+  --sunken: #eff4f6;
+  --line: #e0e8ec;
+  --line-strong: #cad7de;
+  --ink: #0b1f2c;
+  --body: #2f4351;
+  --muted: #5a6d79;
+  --accent: #2a6380;
+  --accent-soft: #e2eef3;
+  --inverse: #0b1f2c;
+  --on-inverse: #fbfdfe;
+  /* ... */
+}
+```
 
-The `@theme inline` block maps every token into Tailwind's namespace, which is what makes `bg-background`, `text-muted-foreground`, `border-border`, `rounded-md`, and `font-serif` work. Add a token in both places — the `:root`/`.dark` blocks and the `@theme` block — and it becomes available as a utility everywhere.
+The palette is drawn from the hero photograph: the mist is `--canvas`, the pine shadows are `--ink`, and the tree line is `--accent`. To rebrand, change `--accent` and `--accent-soft` in both blocks. The accent marks links, focus rings, the reading progress bar, and hover states. Primary buttons use `--inverse` and `--on-inverse`, not the accent. Update the color in [public/favicon.svg](./public/favicon.svg) to match, and the two `theme-color` tags in `BaseLayout.astro`, which follow `--canvas`.
 
-To restyle the theme, change the token values rather than the utilities in the markup. A new accent colour is one edit to `--primary` in each scheme; it carries to links, active states, the reading progress bar, the tag hovers, and the focus ring.
+The tokens are also Tailwind colors, so `bg-canvas`, `bg-surface`, `bg-sunken`, `border-line`, `text-ink`, `text-body`, `text-muted`, and `text-accent` work in markup. The type scale (`text-display`, `text-headline`, `text-section`, `text-title`, `text-lead`) and the radii (`rounded-card`, `rounded-panel`) are defined in the `@theme` block of the same file.
 
-## Dark Mode
-
-Dark mode is a class on `<html>`, applied before first paint by the inline script in [src/layouts/BaseLayout.astro](./src/layouts/BaseLayout.astro): a stored choice in `localStorage.theme` wins, otherwise `prefers-color-scheme` decides. Because it runs in the head, there is no flash of the wrong scheme. The toggle in [src/components/Header.astro](./src/components/Header.astro) writes that key.
-
-The `dark` variant is registered as `@custom-variant dark (&:is(.dark *))`, so `dark:` utilities and `.dark &` selectors both work. To ship a single scheme, drop the toggle from the header and the `.dark` block from the stylesheet; leave the inline script alone or remove it entirely, not half.
+Shared pieces such as `.shell`, `.serif`, `.btn`, `.chip`, `.meta`, `.media`, `.field`, and the archive's filter styles are in the components layer of `global.css`.
 
 ## Fonts
 
-Three families are self-hosted from [public/fonts](./public/fonts) as latin-subset `woff2` files: Fraunces for display and headings (`--font-serif`), Inter for UI and body text (`--font-sans`), and JetBrains Mono for code and numeric labels (`--font-mono`). Each is declared with a variable weight range, `font-display: swap`, and a `unicode-range` so the browser can skip the file for text it cannot cover.
+Newsreader, Geist, and Geist Mono are self-hosted in [public/fonts](./public/fonts) and declared at the top of `global.css`:
 
-Only Inter and Fraunces are preloaded in [src/layouts/BaseLayout.astro](./src/layouts/BaseLayout.astro), since those two carry everything above the fold. JetBrains Mono is left to load on demand.
+- **Newsreader**, `--font-serif`, sets headlines and the reading column. It is bundled in roman and italic, each split into Latin and Latin Extended files that load only when a page needs them.
+- **Geist**, `--font-sans`, sets the interface.
+- **Geist Mono**, `--font-mono`, sets code and counts.
 
-To change typefaces: drop your `woff2` files into `public/fonts`, rewrite the matching `@font-face` rules and the `--font-*` tokens at the top of [src/styles.css](./src/styles.css), and update the two preload tags. If you add a family, subset it — an unsubsetted variable font will undo the theme's page weight.
+All three are variable fonts with `font-display: swap`. Newsreader's Latin roman and Geist are preloaded in `BaseLayout.astro`, since they carry everything above the fold.
 
-## SEO
+To change them, replace the files, update the `@font-face` rules, set `--font-sans`, `--font-serif`, and `--font-mono` in the `@theme` block, update the preloaded files in `BaseLayout.astro`, and edit the "Set in" line in `SiteFooter.astro`.
 
-[src/layouts/BaseLayout.astro](./src/layouts/BaseLayout.astro) owns the document head. Every page passes what it needs as props:
+## Light and Dark Mode
 
-| Prop          | Purpose                                                             |
-| ------------- | ------------------------------------------------------------------- |
-| `title`       | `<title>`, `og:title`, `twitter:title`                              |
-| `description` | Meta description and both social descriptions                       |
-| `canonical`   | Canonical path; resolved to an absolute URL                         |
-| `ogType`      | `website` by default, `article` on posts                            |
-| `ogImage`     | Social image; resolved to an absolute URL                           |
-| `jsonLd`      | Serialized into a `application/ld+json` script when present         |
-| `flushFooter` | Removes the footer's top margin, for pages ending in a full section |
+Quiet Pages follows the reader's system setting until they press the theme toggle; their choice is then remembered in `localStorage` under `quietpages-theme`. The script in [src/layouts/BaseLayout.astro](./src/layouts/BaseLayout.astro) applies the mode before the first paint, so there is no flash.
 
-Only article pages emit structured data, as `BlogPosting`. The breadcrumb trail rendered by [src/components/Breadcrumbs.astro](./src/components/Breadcrumbs.astro) is presentational; add a `BreadcrumbList` object to the page's `jsonLd` if you want it in search results.
+Dark mode is the `dark` class on `<html>`. Use the `dark:` variant in markup, or `.dark` in CSS. The toggle is hidden without JavaScript, when the system setting decides.
 
-The feed, sitemap, and robots endpoints are plain Astro endpoints, not integrations, so they are easy to edit: [rss.xml.js](./src/pages/rss.xml.js) publishes titles, links, dates, authors, and excerpts for every non-draft post — no full article bodies, so subscribers click through. Whatever you change, keep drafts excluded: all three read the same `sortedPosts()` helper, which filters them out once.
+## Motion
+
+Page headers rise in on load: add `rise` to an element to opt it in, and `style="--rise-order: 2"` to stagger it. Cards zoom their image slightly on hover, and the search palette fades in. All of it is CSS, and all of it stops when the reader prefers reduced motion.
+
+## SEO and Structured Data
+
+[src/layouts/BaseLayout.astro](./src/layouts/BaseLayout.astro) writes the document head from the props each page passes:
+
+| Prop             | Purpose                                                                |
+| ---------------- | ---------------------------------------------------------------------- |
+| `title`          | The page title, suffixed with the site name                            |
+| `description`    | The meta description and both social descriptions                      |
+| `image`          | An imported image, cropped to a 1200x630 social card, or a public path |
+| `imageAlt`       | Alt text for the social image                                          |
+| `type`           | `website`, `article`, or `profile` for Open Graph                      |
+| `canonical`      | Overrides the canonical URL                                            |
+| `noindex`        | Adds `noindex, follow`; the 404 page uses it                           |
+| `publishedTime`  | `article:published_time`                                               |
+| `modifiedTime`   | `article:modified_time`                                                |
+| `subscribe`      | `false` hides the subscribe panel                                      |
+| `structuredData` | The page's JSON-LD; pages without it get the `WebSite` schema          |
+
+- Every page has a canonical URL, Open Graph and Twitter/X tags, and JSON-LD. The schemas are built with the helpers in [src/lib/schema.ts](./src/lib/schema.ts): `WebSite` with a `SearchAction` on the homepage, `BlogPosting` on articles, `CollectionPage` on the archive and the section, tag, and contributor pages, `ProfilePage` on author pages, and `AboutPage` and `ContactPage`. Every page below the homepage adds a `BreadcrumbList` matching its visible breadcrumbs.
+- `/rss.xml` lists every published post, newest first, with its excerpt, author, and section.
+- `/sitemap-index.xml` is generated by `@astrojs/sitemap`, and `/robots.txt` points to it.
+
+## Deployment
+
+`npm run build` writes the static site to `dist/`. [vercel.json](./vercel.json) configures Vercel and [wrangler.jsonc](./wrangler.jsonc) deploys to Cloudflare Workers with `npx wrangler deploy`. Any other static host works with `dist/` as the output directory and `npm run build` as the build command. Delete the config files for hosts you do not use.
 
 ## Before Launch
 
-- Set `SITE_URL` in the build environment, and confirm a built page's canonical tag shows your domain (see [Production URL](#production-url)).
-- Replace `SITE`, `NAVIGATION`, `CONTACT`, and `SOCIAL_LINKS` with real values, and delete the demo repository link.
-- Replace the demo authors and their avatars; remember `authors[0]` fronts the sidebar.
-- Prune categories and tags down to what you actually publish, so no empty taxonomy page reaches the sitemap.
-- Replace the eight demo posts in [src/content/blog](./src/content/blog), including their images and credits.
-- Fill in `FORMS.contact.action` and `FORMS.newsletter.action`, then submit both forms against the real endpoints.
-- Rewrite the About and Contact copy, and the homepage hero headline.
-- Replace [public/favicon.svg](./public/favicon.svg) and the hero image.
+- Set `siteConfig.siteUrl` to your domain, build, and confirm a page's canonical tag shows it.
+- Replace the name, title, description, email, and social links in `src/config/site.ts`.
+- Replace the demo contributors and their portraits in `src/config/authors.ts` and `src/assets/authors`.
+- Trim `src/config/taxonomy.ts` to the sections and tags you publish under.
+- Replace the eight demo posts in `src/content/blog`, with their covers and credits.
+- Set the form endpoints in `siteConfig.forms` and send a test through each form.
+- Rewrite the homepage copy in `src/config/home.ts`, and the About and Contact pages.
+- Replace the homepage photograph, `public/favicon.svg`, and `public/og-image.png`.

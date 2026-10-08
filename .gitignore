@@ -8,11 +8,28 @@ pnpm-debug.log*
 lerna-debug.log*
 
 node_modules
-dist
 .astro
+dist
+dist-ssr
+coverage
 *.local
 
+# Environment
+.env*
+!.env.example
+
+# Internal release/workflow notes
+RELEASE_CHECKLIST.md
+
+# Wrangler / Cloudflare
+.wrangler/
+.dev.vars
+
+# Vercel
+.vercel
+
 # Editor directories and files
+test-results
 .vscode/*
 !.vscode/extensions.json
 .idea
@@ -22,3 +39,6 @@ dist
 *.njsproj
 *.sln
 *.sw?
+
+# Local AI assistant instructions
+CLAUDE.md

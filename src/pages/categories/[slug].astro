@@ -1,46 +1,48 @@
 ---
-import BaseLayout from "../../layouts/BaseLayout.astro";
-import Breadcrumbs from "../../components/Breadcrumbs.astro";
-import PostCard from "../../components/PostCard.astro";
-import Sidebar from "../../components/Sidebar.astro";
-import { SITE, categories, postsByCategory } from "../../lib/blog-data.js";
+import PostGrid from "@/components/blog/PostGrid.astro";
+import PageHeader from "@/components/ui/PageHeader.astro";
+import { categories, type Category } from "@/config/taxonomy";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { categoryUrl, getPosts, plural } from "@/lib/posts";
+import { absolute, withBreadcrumbs } from "@/lib/schema";
 
-export function getStaticPaths() {
-  return categories.map((category) => ({ params: { slug: category.slug }, props: { category } }));
+export async function getStaticPaths() {
+  const posts = await getPosts();
+  return categories
+    .filter((category) => posts.some((post) => post.category === category.slug))
+    .map((category) => ({ params: { slug: category.slug }, props: { category } }));
+}
+
+interface Props {
+  category: Category;
 }
 
 const { category } = Astro.props;
-const list = await postsByCategory(category.slug);
+const posts = (await getPosts()).filter((post) => post.category === category.slug);
+const crumbs = [
+  { label: "Home", href: "/" },
+  { label: "Sections", href: "/categories/" },
+  { label: category.name },
+];
 ---
 
 <BaseLayout
-  title={`${category.name} - ${SITE.name}`}
-  description={`Writing in ${category.name} on ${SITE.name}.`}
-  canonical={`/categories/${category.slug}`}
+  title={category.name}
+  description={`${category.description} ${plural(posts.length, "piece")} in ${category.name}.`}
+  structuredData={withBreadcrumbs(
+    {
+      "@type": "CollectionPage",
+      name: category.name,
+      description: category.description,
+      url: absolute(categoryUrl(category.slug)),
+    },
+    crumbs,
+  )}
 >
-  <div class="mx-auto max-w-6xl px-5 py-12">
-    <Breadcrumbs items={[{ label: "Home", to: "/" }, { label: "Categories" }, { label: category.name }]} />
-    <header class="mt-6 border-b border-border pb-8">
-      <div class="text-xs font-medium uppercase tracking-[0.2em] text-primary">Category</div>
-      <h1 class="mt-2 font-serif text-4xl font-semibold sm:text-5xl">{category.name}</h1>
-      <p class="mt-3 text-muted-foreground">
-        {list.length} {list.length === 1 ? "piece" : "pieces"} in this section.
-      </p>
-    </header>
-
-    <div class="grid gap-12 lg:grid-cols-[1fr_280px]">
-      <div>
-        {
-          list.length === 0 ? (
-            <div class="mt-12 rounded-md border border-dashed border-border py-20 text-center">
-              <p class="text-muted-foreground">No posts yet in this category.</p>
-            </div>
-          ) : (
-            list.map((post) => <PostCard post={post} variant="list" />)
-          )
-        }
-      </div>
-      <div class="pt-8"><Sidebar /></div>
-    </div>
-  </div>
+  <PageHeader title={category.name} lead={category.description} crumbs={crumbs}>
+    <p class="rise mt-6 text-sm text-muted" style="--rise-order: 3">
+      {plural(posts.length, "piece")}
+    </p>
+  </PageHeader>
+  <PostGrid posts={posts} />
 </BaseLayout>

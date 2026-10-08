@@ -1,360 +1,331 @@
 ---
 import { Image, getImage } from "astro:assets";
-import { getCollection, render } from "astro:content";
-import BaseLayout from "../../layouts/BaseLayout.astro";
-import Breadcrumbs from "../../components/Breadcrumbs.astro";
-import TableOfContents from "../../components/TableOfContents.astro";
-import PostCard from "../../components/PostCard.astro";
-import Newsletter from "../../components/Newsletter.astro";
-import Icon from "../../components/Icon.astro";
+import { render } from "astro:content";
+import AuthorNote from "@/components/blog/AuthorNote.astro";
+import Avatar from "@/components/blog/Avatar.astro";
+import Breadcrumbs from "@/components/blog/Breadcrumbs.astro";
+import PostCard from "@/components/blog/PostCard.astro";
+import ShareSheet from "@/components/blog/ShareSheet.astro";
+import Lightbox from "@/components/blog/Lightbox.astro";
+import TableOfContents from "@/components/blog/TableOfContents.astro";
+import Figure from "@/components/mdx/Figure.astro";
+import Icon from "@/components/ui/Icon.astro";
+import { siteConfig } from "@/config/site";
+import BaseLayout from "@/layouts/BaseLayout.astro";
 import {
-  SITE,
+  authorUrl,
+  categoryUrl,
+  formatDate,
+  getAdjacentPosts,
   getAuthor,
   getCategory,
+  getPosts,
+  getRelatedPosts,
   getTag,
-  formatDate,
-  relatedPosts,
-  adjacentPosts,
-  normalizePost,
-} from "../../lib/blog-data.js";
+  isoDate,
+  postUrl,
+  tagUrl,
+  type Post,
+} from "@/lib/posts";
+import { absolute, withBreadcrumbs, type Crumb } from "@/lib/schema";
 
 export async function getStaticPaths() {
-  const entries = await getCollection("blog", ({ data }) => !data.draft);
-  return entries.map((entry) => ({ params: { slug: entry.id }, props: { entry } }));
+  const posts = await getPosts();
+  return posts.map((post) => ({ params: { slug: post.slug }, props: { post } }));
 }
 
-const { entry } = Astro.props;
-const post = normalizePost(entry);
+interface Props {
+  post: Post;
+}
+
+const { post } = Astro.props;
+const { Content, headings } = await render(post.entry);
 const author = getAuthor(post.author);
 const category = getCategory(post.category);
-const { Content, headings } = await render(entry);
-const toc = headings
-  .filter((heading) => heading.depth === 2 || heading.depth === 3)
-  .map((heading) => ({
-    level: heading.depth,
-    id: heading.slug,
-    text: heading.text,
-  }));
-const related = await relatedPosts(post);
-const { prev, next } = await adjacentPosts(post);
-const canonical = post.canonical ?? `/blog/${post.slug}`;
-const canonicalUrl = new URL(canonical, SITE.url).toString();
-const socialImage = post.thumbnail
-  ? await getImage({
-      src: post.thumbnail,
-      width: 1200,
-      height: 630,
-      format: "webp",
-      quality: 78,
-    })
-  : undefined;
-const thumbnailUrl = socialImage ? new URL(socialImage.src, SITE.url).toString() : undefined;
-const shareUrl = canonicalUrl;
-const jsonLd = {
-  "@context": "https://schema.org",
-  "@type": "BlogPosting",
-  headline: post.title,
-  description: post.excerpt,
-  datePublished: post.date,
-  dateModified: post.updated || post.date,
-  image: thumbnailUrl,
-  author: { "@type": "Person", name: author?.name },
-  mainEntityOfPage: canonicalUrl,
-};
+const related = await getRelatedPosts(post);
+const { newer, older } = await getAdjacentPosts(post);
+const url = absolute(postUrl(post));
+const card = await getImage({
+  src: post.thumbnail,
+  width: 1200,
+  height: 630,
+  fit: "cover",
+  format: "jpg",
+  quality: 80,
+});
+
+const crumbs: Crumb[] = [
+  { label: "Home", href: "/" },
+  { label: "Writing", href: "/blog/" },
+  ...(category ? [{ label: category.name, href: categoryUrl(category.slug) }] : []),
+  { label: post.title },
+];
+
+const schema = withBreadcrumbs(
+  {
+    "@type": "BlogPosting",
+    headline: post.title,
+    description: post.excerpt,
+    datePublished: post.date.toISOString(),
+    dateModified: (post.updated ?? post.date).toISOString(),
+    url,
+    mainEntityOfPage: post.canonical ?? url,
+    inLanguage: siteConfig.language,
+    articleSection: category?.name,
+    keywords: post.tags.map((tag) => getTag(tag)?.name ?? tag).join(", "),
+    timeRequired: `PT${post.readingTime}M`,
+    image: absolute(card.src),
+    author: author
+      ? { "@type": "Person", name: author.name, url: absolute(authorUrl(author.slug)) }
+      : undefined,
+    publisher: { "@type": "Organization", name: siteConfig.name, url: absolute("/") },
+  },
+  crumbs,
+);
 ---
 
 <BaseLayout
-  title={post.seoTitle ?? `${post.title} - ${SITE.name}`}
+  title={post.seoTitle ?? post.title}
   description={post.seoDescription ?? post.excerpt}
-  canonical={canonical}
-  ogType="article"
-  ogImage={socialImage?.src}
-  jsonLd={jsonLd}
-  flushFooter
+  image={post.thumbnail}
+  imageAlt={post.thumbnailAlt}
+  type="article"
+  canonical={post.canonical}
+  publishedTime={post.date}
+  modifiedTime={post.updated}
+  structuredData={schema}
 >
-  <div class="fixed left-0 right-0 top-0 z-50 h-0.5 bg-transparent">
-    <div data-reading-progress class="h-full bg-primary transition-[width] duration-75" style="width: 0%"></div>
+  <div class="fixed inset-x-0 top-0 z-[60] h-0.5" aria-hidden="true">
+    <div class="h-full origin-left scale-x-0 bg-accent" data-progress></div>
   </div>
 
-  <article class="mx-auto max-w-6xl px-5 py-10">
-    <Breadcrumbs
-      items={[
-        { label: "Home", to: "/" },
-        { label: "Archive", to: "/blog" },
-        ...(category ? [{ label: category.name, to: `/categories/${category.slug}` }] : []),
-        { label: post.title },
-      ]}
-    />
-
-    <header class="mx-auto mt-8 max-w-3xl text-center">
-      {
-        category && (
-          <a href={`/categories/${category.slug}`} class="text-xs font-medium uppercase tracking-[0.2em] text-primary hover:underline">
-            {category.name}
-          </a>
-        )
-      }
-      <h1 class="mt-4 font-serif text-4xl font-semibold leading-[1.1] sm:text-5xl">
-        {post.title}
-      </h1>
-      <p class="mx-auto mt-5 max-w-2xl text-lg text-muted-foreground">{post.excerpt}</p>
-      <div class="mt-6 flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm text-muted-foreground">
-        {
-          author && (
-            <a href={`/authors/${author.slug}`} class="flex items-center gap-2 hover:text-foreground">
-              <img src={author.avatar} alt="" width="28" height="28" class="h-7 w-7 rounded-full" />
-              {author.name}
+  <article>
+    <header>
+      <div class="shell flex flex-col items-center pb-12 pt-12 text-center sm:pt-16">
+        <Breadcrumbs items={crumbs} class="rise flex justify-center [&_ol]:justify-center" />
+        <h1 class="serif rise mt-8 max-w-4xl text-headline font-normal" style="--rise-order: 1">
+          {post.title}
+        </h1>
+        <p class="rise mt-6 max-w-2xl text-lead text-body" style="--rise-order: 2">
+          {post.excerpt}
+        </p>
+        <div
+          class="rise mt-9 flex flex-wrap items-center justify-center gap-x-5 gap-y-3"
+          style="--rise-order: 3"
+        >
+          {author && (
+            <a href={authorUrl(author.slug)} class="group flex items-center gap-3 text-left">
+              <Avatar author={author} size={44} />
+              <span class="text-sm leading-snug">
+                <span class="block font-medium group-hover:text-accent">{author.name}</span>
+                <span class="block text-muted">{author.role}</span>
+              </span>
             </a>
-          )
-        }
-        <span>&middot;</span>
-        <time datetime={post.date}>{formatDate(post.date)}</time>
-        {post.updated && <><span>&middot;</span><span class="italic">updated {formatDate(post.updated)}</span></>}
-        <span>&middot;</span>
-        <span>{post.readingTime} min read</span>
+          )}
+          <span class="hidden h-8 w-px bg-line-strong sm:block" aria-hidden="true"></span>
+          <div class="meta justify-center">
+            <time datetime={isoDate(post.date)}>{formatDate(post.date)}</time>
+            {post.updated && (
+              <span class="hidden sm:inline">
+                Updated{" "}
+                <time datetime={isoDate(post.updated)}>{formatDate(post.updated, "short")}</time>
+              </span>
+            )}
+            <span>{post.readingTime} min read</span>
+          </div>
+          <button
+            type="button"
+            class="btn btn-quiet btn-sm"
+            aria-haspopup="dialog"
+            data-share-open
+            hidden
+          >
+            <Icon name="social-share" class="size-3.5" />
+            Share
+          </button>
+        </div>
       </div>
     </header>
 
-    {
-      post.thumbnail && (
-        <figure class="mx-auto mt-10 max-w-4xl">
-          <div class="overflow-hidden rounded-md bg-muted">
-            <Image
-              src={post.thumbnail}
-              alt={post.thumbnailAlt || post.imageCredit?.caption || ""}
-              class="w-full"
-              widths={[640, 960, 1280, 1600]}
-              sizes="(min-width: 1024px) 896px, calc(100vw - 40px)"
-              format="webp"
-              quality={78}
-            />
-          </div>
-          {
-            post.imageCredit && (
-              <figcaption class="mx-auto mt-3 max-w-2xl text-center text-xs leading-relaxed text-muted-foreground">
-                {post.imageCredit.caption && <span>{post.imageCredit.caption} </span>}
-                <span>
-                  Photo by{" "}
-                  <a
-                    href={post.imageCredit.authorUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    class="text-foreground/75 underline underline-offset-2 hover:text-primary"
-                  >
-                    {post.imageCredit.author}
-                  </a>{" "}
-                  on{" "}
-                  <a
-                    href={post.imageCredit.sourceUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    class="text-foreground/75 underline underline-offset-2 hover:text-primary"
-                  >
-                    {post.imageCredit.source}
-                  </a>
-                  .
-                </span>
-              </figcaption>
-            )
-          }
-        </figure>
-      )
-    }
+    <figure class="shell max-w-[calc(66rem+2*var(--gutter))]">
+      <div class="media shadow-[var(--shadow-card)]">
+        <Image
+          src={post.thumbnail}
+          alt={post.thumbnailAlt}
+          widths={[640, 960, 1280, 1600]}
+          sizes="(min-width: 70rem) 66rem, 94vw"
+          quality={72}
+          loading="eager"
+          fetchpriority="high"
+          class="aspect-[16/9] w-full"
+        />
+      </div>
+      {post.imageCredit && (
+        <figcaption class="mx-auto mt-4 max-w-2xl text-center text-sm text-muted">
+          {post.imageCredit.caption && <span>{post.imageCredit.caption} </span>}
+          Photo by{" "}
+          <a href={post.imageCredit.authorUrl} class="text-link" rel="noopener noreferrer">
+            {post.imageCredit.author}
+          </a>{" "}
+          on{" "}
+          <a href={post.imageCredit.sourceUrl} class="text-link" rel="noopener noreferrer">
+            {post.imageCredit.source}
+          </a>
+        </figcaption>
+      )}
+    </figure>
 
-    <div class="mt-12 grid gap-12 lg:grid-cols-[1fr_220px]">
-      <div class="mx-auto w-full min-w-0 max-w-2xl">
-        <div class="prose-article">
-          <Content />
+    <div class="shell mt-14 grid grid-cols-[minmax(0,1fr)] gap-12 sm:mt-20 xl:grid-cols-[1fr_minmax(0,42rem)_1fr]">
+      <div class="mx-auto w-full min-w-0 max-w-[42rem] xl:col-start-2">
+        <div class="prose-article" data-prose>
+          <Content components={{ Figure }} />
         </div>
 
-        <div class="mt-10 flex flex-wrap items-center gap-2">
-          <span class="text-xs uppercase tracking-wider text-muted-foreground">Tags</span>
-          {
-            post.tags.map((tag) => {
-              const item = getTag(tag);
-              return (
-                <a href={`/tags/${tag}`} class="rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground hover:border-primary hover:text-primary">
-                  #{item?.name ?? tag}
+        {post.tags.length > 0 && (
+          <ul class="mt-12 flex flex-wrap gap-2" aria-label="Tags">
+            {post.tags.map((tag) => (
+              <li>
+                <a href={tagUrl(tag)} class="chip">
+                  <Icon name="hash" class="size-3.5 opacity-60" />
+                  {getTag(tag)?.name ?? tag}
                 </a>
-              );
-            })
-          }
-        </div>
+              </li>
+            ))}
+          </ul>
+        )}
 
-        <div class="mt-8 flex items-center gap-2 border-y border-border py-4">
-          <span class="text-xs uppercase tracking-wider text-muted-foreground">Share</span>
-          <a target="_blank" rel="noreferrer" aria-label="Share on Twitter" data-share-twitter data-share-title={post.title} href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(post.title)}&url=${encodeURIComponent(shareUrl)}`} class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted-foreground hover:text-primary"><Icon name="twitter" class="h-3.5 w-3.5" /></a>
-          <a target="_blank" rel="noreferrer" aria-label="Share on LinkedIn" data-share-linkedin href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(shareUrl)}`} class="inline-flex h-8 w-8 items-center justify-center rounded-full border border-border text-muted-foreground hover:text-primary"><Icon name="linkedin" class="h-3.5 w-3.5" /></a>
-          <button type="button" data-copy-link class="ml-auto inline-flex items-center gap-2 rounded-full border border-border px-3 py-1.5 text-xs text-muted-foreground hover:text-foreground">
-            <span data-copy-ready class="inline-flex items-center gap-2"><Icon name="copy" class="h-3.5 w-3.5" /> Copy link</span>
-            <span data-copy-done class="inline-flex items-center gap-2" hidden><Icon name="check" class="h-3.5 w-3.5" /> Copied</span>
+        <div
+          class="mt-10 flex flex-wrap items-center justify-between gap-4 border-t border-line pt-8"
+          data-needs-js
+        >
+          <p class="text-muted">Know someone who would enjoy this?</p>
+          <button
+            type="button"
+            class="btn btn-quiet btn-sm"
+            aria-haspopup="dialog"
+            data-share-open
+            hidden
+          >
+            <Icon name="social-share" class="size-3.5" />
+            Share this essay
           </button>
         </div>
 
-        {
-          author && (
-            <div class="mt-10 flex items-start gap-4 rounded-md border border-border p-5">
-              <img src={author.avatar} alt="" width="56" height="56" class="h-14 w-14 rounded-full" />
-              <div>
-                <div class="text-xs uppercase tracking-wider text-muted-foreground">Written by</div>
-                <a href={`/authors/${author.slug}`} class="font-serif text-lg font-semibold hover:text-primary">
-                  {author.name}
-                </a>
-                <p class="mt-1 text-sm text-muted-foreground">{author.bio}</p>
-              </div>
-            </div>
-          )
-        }
+        {author && (
+          <div class="mt-10">
+            <AuthorNote author={author} />
+          </div>
+        )}
 
-        <nav class="mt-12 grid gap-4 border-t border-border pt-8 sm:grid-cols-2">
-          {
-            prev ? (
-              <a href={`/blog/${prev.slug}`} class="group block">
-                <div class="flex items-center gap-1 text-xs text-muted-foreground"><Icon name="arrow-left" class="h-3 w-3" /> Previous</div>
-                <div class="mt-1 font-serif text-base font-semibold leading-snug group-hover:text-primary">{prev.title}</div>
-              </a>
-            ) : (
-              <div />
-            )
-          }
-          {
-            next ? (
-              <a href={`/blog/${next.slug}`} class="group block sm:text-right">
-                <div class="flex items-center gap-1 text-xs text-muted-foreground sm:justify-end">Next <Icon name="arrow-right" class="h-3 w-3" /></div>
-                <div class="mt-1 font-serif text-base font-semibold leading-snug group-hover:text-primary">{next.title}</div>
-              </a>
-            ) : (
-              <div />
-            )
-          }
+        <nav class="mt-10 grid gap-4 sm:grid-cols-2" aria-label="More writing">
+          {older && (
+            <a href={postUrl(older)} class="adjacent group">
+              <span class="flex items-center gap-1.5 text-sm text-muted">
+                <Icon
+                  name="arrow-left"
+                  class="size-4 transition-transform duration-300 group-hover:-translate-x-0.5"
+                />
+                Previous
+              </span>
+              <span class="serif mt-2 block text-xl leading-snug">{older.title}</span>
+            </a>
+          )}
+          {newer && (
+            <a href={postUrl(newer)} class="adjacent group sm:col-start-2 sm:text-right">
+              <span class="flex items-center gap-1.5 text-sm text-muted sm:justify-end">
+                Next
+                <Icon
+                  name="arrow-right"
+                  class="size-4 transition-transform duration-300 group-hover:translate-x-0.5"
+                />
+              </span>
+              <span class="serif mt-2 block text-xl leading-snug">{newer.title}</span>
+            </a>
+          )}
         </nav>
-
-        <div class="mt-12 rounded-md border border-dashed border-border p-8 text-center">
-          <Icon name="message" class="mx-auto h-5 w-5 text-muted-foreground" />
-          <div class="mt-2 font-serif text-lg">Comments</div>
-          <p class="mt-1 text-sm text-muted-foreground">Hook this up to your favourite commenting platform &mdash; Giscus, Disqus, or your own.</p>
-        </div>
       </div>
 
-      <aside class="hidden lg:block">
-        <div class="sticky top-24">
-          <TableOfContents items={toc} />
+      <aside class="hidden xl:col-start-3 xl:block">
+        <div class="sticky top-[calc(var(--header-h)+2.5rem)] ml-auto w-56">
+          <TableOfContents headings={headings} />
         </div>
       </aside>
     </div>
-
-    {
-      related.length > 0 && (
-        <section class="mt-20 border-t border-border pt-12">
-          <h2 class="font-serif text-2xl font-semibold">Continue reading</h2>
-          <div class="mt-8 grid gap-10 sm:grid-cols-2 lg:grid-cols-3">
-            {related.map((relatedPost) => <PostCard post={relatedPost} />)}
-          </div>
-        </section>
-      )
-    }
   </article>
 
-  <Newsletter />
+  {related.length > 0 && (
+    <section class="shell mt-28 sm:mt-36" aria-labelledby="related-title">
+      <h2 id="related-title" class="serif text-section font-normal">
+        Keep reading
+      </h2>
+      <div class="mt-12 grid gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-3">
+        {related.map((item) => (
+          <PostCard post={item} />
+        ))}
+      </div>
+    </section>
+  )}
+  <Lightbox />
+  <ShareSheet title={post.title} url={url} />
 </BaseLayout>
 
-<script>
-  const progress = document.querySelector("[data-reading-progress]");
-  const updateProgress = () => {
-    if (!progress) return;
-    const root = document.documentElement;
-    const total = root.scrollHeight - root.clientHeight;
-    progress.style.width = `${total > 0 ? (root.scrollTop / total) * 100 : 0}%`;
-  };
-  updateProgress();
-  window.addEventListener("scroll", updateProgress, { passive: true });
-
-  const copyIcon = '<svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"></rect><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"></path></svg>';
-  const checkIcon = '<svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"></path></svg>';
-  const twitterShare = document.querySelector("[data-share-twitter]");
-  const linkedinShare = document.querySelector("[data-share-linkedin]");
-  const currentUrl = window.location.href;
-
-  if (twitterShare) {
-    const title = twitterShare.dataset.shareTitle || document.title;
-    twitterShare.setAttribute(
-      "href",
-      `https://twitter.com/intent/tweet?text=${encodeURIComponent(title)}&url=${encodeURIComponent(currentUrl)}`,
-    );
+<style>
+  .adjacent {
+    display: block;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-card);
+    padding: 1.25rem 1.5rem 1.5rem;
+    transition: border-color 200ms ease;
   }
 
-  linkedinShare?.setAttribute(
-    "href",
-    `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(currentUrl)}`,
-  );
+  .adjacent:hover {
+    border-color: var(--line-strong);
+    background: var(--surface);
+  }
+</style>
 
-  const writeClipboard = async (text) => {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(text);
-      return;
-    }
+<script>
+  const bar = document.querySelector<HTMLElement>("[data-progress]");
+  if (bar) {
+    const update = () => {
+      const root = document.documentElement;
+      const total = root.scrollHeight - root.clientHeight;
+      bar.style.transform = `scaleX(${total > 0 ? root.scrollTop / total : 0})`;
+    };
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+  }
 
-    const textarea = document.createElement("textarea");
-    textarea.value = text;
-    textarea.setAttribute("readonly", "");
-    textarea.style.position = "fixed";
-    textarea.style.inset = "0 auto auto 0";
-    textarea.style.opacity = "0";
-    document.body.appendChild(textarea);
-    textarea.select();
-    document.execCommand("copy");
-    textarea.remove();
-  };
+  const copyIcon =
+    '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>';
+  const checkIcon =
+    '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>';
 
-  const copyButton = document.querySelector("[data-copy-link]");
-  copyButton?.addEventListener("click", async () => {
-    try {
-      await writeClipboard(window.location.href);
-      const ready = copyButton.querySelector("[data-copy-ready]");
-      const done = copyButton.querySelector("[data-copy-done]");
-      if (ready && done) {
-        ready.hidden = true;
-        done.hidden = false;
-        window.setTimeout(() => {
-          ready.hidden = false;
-          done.hidden = true;
-        }, 2000);
-      }
-    } catch (error) {}
-  });
-
-  document.querySelectorAll(".prose-article pre").forEach((pre) => {
-    if (pre.parentElement?.classList.contains("code-block")) return;
-
+  document.querySelectorAll<HTMLPreElement>("[data-prose] pre").forEach((pre) => {
     const wrapper = document.createElement("div");
     wrapper.className = "code-block";
-    pre.parentNode?.insertBefore(wrapper, pre);
-    wrapper.appendChild(pre);
+    pre.before(wrapper);
+    wrapper.append(pre);
 
     const button = document.createElement("button");
     button.type = "button";
-    button.className = "code-copy-button";
-    button.dataset.tooltip = "Copy code";
+    button.className = "code-copy";
     button.setAttribute("aria-label", "Copy code");
     button.innerHTML = copyIcon;
-    wrapper.appendChild(button);
+    wrapper.append(button);
 
-    let resetTimer;
     button.addEventListener("click", async () => {
       try {
-        await writeClipboard(pre.textContent ?? "");
-        window.clearTimeout(resetTimer);
-        button.classList.add("is-copied");
-        button.dataset.tooltip = "Copied";
-        button.setAttribute("aria-label", "Copied");
+        await navigator.clipboard.writeText(pre.textContent ?? "");
         button.innerHTML = checkIcon;
-        resetTimer = window.setTimeout(() => {
-          button.classList.remove("is-copied");
-          button.dataset.tooltip = "Copy code";
-          button.setAttribute("aria-label", "Copy code");
+        button.setAttribute("aria-label", "Copied");
+        button.toggleAttribute("data-copied", true);
+        window.setTimeout(() => {
           button.innerHTML = copyIcon;
+          button.setAttribute("aria-label", "Copy code");
+          button.removeAttribute("data-copied");
         }, 1800);
-      } catch (error) {}
+      } catch {}
     });
   });
 </script>

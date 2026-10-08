@@ -1,15 +1,15 @@
 ---
-import BaseLayout from "../../layouts/BaseLayout.astro";
-import Breadcrumbs from "../../components/Breadcrumbs.astro";
-import PostCard from "../../components/PostCard.astro";
-import Icon from "../../components/Icon.astro";
-import { SITE, categories, sortedPosts, tags } from "../../lib/blog-data.js";
+import PostCard from "@/components/blog/PostCard.astro";
+import Icon from "@/components/ui/Icon.astro";
+import PageHeader from "@/components/ui/PageHeader.astro";
+import { categories, tags } from "@/config/taxonomy";
+import BaseLayout from "@/layouts/BaseLayout.astro";
+import { categoryUrl, getPosts, plural, tagUrl } from "@/lib/posts";
+import { withBreadcrumbs } from "@/lib/schema";
 
-const posts = await sortedPosts();
+const posts = await getPosts();
 
-/* Options with no post behind them are dropped, so no filter is a dead end. The
-   build-time counts are what a visitor without JavaScript sees; the script keeps
-   them in step with the other active filters. */
+/* Options with no post behind them are dropped, so no filter is a dead end. */
 const categoryOptions = categories
   .map((category) => ({
     ...category,
@@ -18,60 +18,76 @@ const categoryOptions = categories
   .filter((category) => category.count > 0);
 
 const tagOptions = tags
-  .map((tag) => ({ ...tag, count: posts.filter((post) => post.tags.includes(tag.slug)).length }))
+  .map((tag) => ({
+    ...tag,
+    count: posts.filter((post) => (post.tags as string[]).includes(tag.slug)).length,
+  }))
   .filter((tag) => tag.count > 0);
+
+const crumbs = [{ label: "Home", href: "/" }, { label: "Writing" }];
 ---
 
 <BaseLayout
-  title={`Archive - ${SITE.name}`}
-  description="Every essay, field note, and interview we've published. Search and filter by category or tag."
-  canonical="/blog"
+  title="The archive"
+  description="Every essay, field note, and interview in the magazine. Search, or filter by section and tag."
+  structuredData={withBreadcrumbs({ "@type": "CollectionPage", name: "The archive" }, crumbs)}
 >
-  <div class="mx-auto max-w-4xl px-5 py-12" data-archive>
-    <Breadcrumbs items={[{ label: "Home", to: "/" }, { label: "Archive" }]} />
-    <h1 class="mt-4 font-serif text-4xl font-semibold sm:text-5xl">The archive</h1>
-    <p class="mt-3 max-w-xl text-muted-foreground">
-      Every piece we've published. {posts.length} essays, field notes, and interviews.
-    </p>
+  <PageHeader
+    title="The archive"
+    lead={`Every essay, field note, and interview we've published, newest first. ${plural(posts.length, "piece")} so far.`}
+    crumbs={crumbs}
+  />
 
-    <form data-archive-search class="mt-8 flex items-center gap-2 border-b border-border pb-2">
-      <Icon name="search" class="h-4 w-4 text-muted-foreground" />
-      <input
-        data-archive-query
-        name="q"
-        aria-label="Search the archive"
-        placeholder="Search the archive..."
-        class="w-full border-0 bg-transparent py-2 outline-none placeholder:text-muted-foreground"
-      />
-      <button
-        data-archive-clear
-        type="button"
-        class="text-xs text-muted-foreground hover:text-foreground"
-        hidden
-      >
-        Clear
-      </button>
-    </form>
+  <div class="shell" data-archive>
+    <div class="flex flex-col gap-3 border-y border-line py-4 lg:flex-row lg:items-center">
+      <form role="search" class="relative lg:w-[26rem]" data-archive-search>
+        <label for="archive-query" class="sr-only">
+          Search the archive
+        </label>
+        <Icon
+          name="search"
+          class="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted"
+        />
+        <input
+          id="archive-query"
+          name="q"
+          type="search"
+          placeholder="Search by title, section, or author"
+          class="archive-search"
+          data-archive-query
+        />
+        <button
+          type="button"
+          class="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-full px-3 py-1.5 text-sm text-muted hover:bg-surface hover:text-ink"
+          data-archive-clear
+          hidden
+        >
+          Clear
+        </button>
+      </form>
 
-    {/* Progressive: without JavaScript each menu row is an ordinary link to its
-        category or tag page; with it the rows filter this list in place. */}
-    <div class="relative mt-6 flex flex-wrap items-center gap-2" data-archive-filters>
-      <details class="group relative" data-filter-menu>
-        <summary class="filter-pill">
-          <span class="filter-pill-label">Category</span>
-          <span class="filter-pill-value" data-filter-label="cat">All</span>
-          <Icon name="chevron-down" class="h-3 w-3 transition-transform group-open:rotate-180" />
-        </summary>
-        {/* Links, so aria-current marks the selection - aria-pressed is button-only. */}
-        <nav class="filter-popover" aria-label="Filter by category">
-          <a href="/blog" class="facet" data-filter="cat" data-value="" aria-current="true">
-            <span class="facet-label">All categories</span>
-            <span class="facet-count" data-facet-count>{posts.length}</span>
-          </a>
-          {
-            categoryOptions.map((category) => (
+      <div class="relative flex flex-wrap items-center gap-2 lg:flex-1" data-archive-filters>
+        <details class="group relative" data-filter-menu>
+          <summary class="filter-pill">
+            <span class="filter-pill-label">Section</span>
+            <span class="filter-pill-value" data-filter-label="cat">
+              All
+            </span>
+            <Icon
+              name="chevron-down"
+              class="size-3.5 text-muted transition-transform group-open:rotate-180"
+            />
+          </summary>
+          <nav class="filter-popover" aria-label="Filter by section">
+            <a href="/blog/" class="facet" data-filter="cat" data-value="" aria-current="true">
+              <span class="facet-label">All sections</span>
+              <span class="facet-count" data-facet-count>
+                {posts.length}
+              </span>
+            </a>
+            {categoryOptions.map((category) => (
               <a
-                href={`/categories/${category.slug}`}
+                href={categoryUrl(category.slug)}
                 class="facet"
                 data-filter="cat"
                 data-value={category.slug}
@@ -81,222 +97,250 @@ const tagOptions = tags
                   {category.count}
                 </span>
               </a>
-            ))
-          }
-        </nav>
-      </details>
+            ))}
+          </nav>
+        </details>
 
-      <details class="group relative" data-filter-menu>
-        <summary class="filter-pill">
-          <span class="filter-pill-label">Tag</span>
-          <span class="filter-pill-value" data-filter-label="tag">Any</span>
-          <Icon name="chevron-down" class="h-3 w-3 transition-transform group-open:rotate-180" />
-        </summary>
-        <nav class="filter-popover" aria-label="Filter by tag">
-          <a href="/blog" class="facet" data-filter="tag" data-value="" aria-current="true">
-            <span class="facet-label">Any tag</span>
-            <span class="facet-count" data-facet-count>{posts.length}</span>
-          </a>
-          {
-            tagOptions.map((tag) => (
-              <a href={`/tags/${tag.slug}`} class="facet" data-filter="tag" data-value={tag.slug}>
-                <span class="facet-label">#{tag.name}</span>
+        <details class="group relative" data-filter-menu>
+          <summary class="filter-pill">
+            <span class="filter-pill-label">Tag</span>
+            <span class="filter-pill-value" data-filter-label="tag">
+              Any
+            </span>
+            <Icon
+              name="chevron-down"
+              class="size-3.5 text-muted transition-transform group-open:rotate-180"
+            />
+          </summary>
+          <nav class="filter-popover" aria-label="Filter by tag">
+            <a href="/blog/" class="facet" data-filter="tag" data-value="" aria-current="true">
+              <span class="facet-label">Any tag</span>
+              <span class="facet-count" data-facet-count>
+                {posts.length}
+              </span>
+            </a>
+            {tagOptions.map((tag) => (
+              <a href={tagUrl(tag.slug)} class="facet" data-filter="tag" data-value={tag.slug}>
+                <span class="facet-label">{tag.name}</span>
                 <span class="facet-count" data-facet-count>
                   {tag.count}
                 </span>
               </a>
-            ))
-          }
-        </nav>
-      </details>
+            ))}
+          </nav>
+        </details>
 
-      <button type="button" class="filter-reset" data-filter-reset hidden>Clear filters</button>
+        <button type="button" class="filter-reset" data-filter-reset hidden>
+          Clear filters
+        </button>
+        <p class="ml-auto text-sm text-muted tabular-nums" data-archive-count aria-live="polite">
+          {plural(posts.length, "result")}
+        </p>
+      </div>
     </div>
 
-    <div data-archive-count class="mt-6 text-sm text-muted-foreground"></div>
-
-    <div data-archive-empty class="mt-12 rounded-md border border-dashed border-border py-20 text-center" hidden>
-      <div class="font-serif text-lg">No matches</div>
-      <p class="mt-2 text-sm text-muted-foreground">Try a different word, or clear the filters.</p>
+    <div class="mt-12 grid gap-x-8 gap-y-14 sm:grid-cols-2 lg:grid-cols-3" data-archive-list>
+      {posts.map((post) => (
+        <PostCard post={post} headingLevel={2} />
+      ))}
     </div>
 
-    <div data-archive-list>
-      {posts.map((post) => <PostCard post={post} variant="list" />)}
+    <div class="mt-12 rounded-card bg-sunken px-6 py-16 text-center" data-archive-empty hidden>
+      <p class="serif text-2xl">Nothing matches that yet.</p>
+      <p class="mt-2 text-muted">Try another word, or clear the filters.</p>
     </div>
 
-    <div data-archive-more-wrap class="mt-10 text-center" hidden>
-      <button
-        type="button"
-        data-archive-more
-        class="rounded-md border border-border px-5 py-2.5 text-sm font-medium hover:bg-muted"
-      ></button>
-      <div data-archive-page class="mt-3 text-xs text-muted-foreground"></div>
+    <div class="mt-12 flex flex-col items-center gap-3" data-archive-more-wrap hidden>
+      <button type="button" class="btn btn-quiet" data-archive-more></button>
+      <p class="text-sm text-muted" data-archive-page></p>
     </div>
   </div>
 </BaseLayout>
 
+<style>
+  .archive-search {
+    width: 100%;
+    height: 2.75rem;
+    border-radius: 999px;
+    background: var(--sunken);
+    padding: 0 4.5rem 0 2.6rem;
+    font-size: 0.9375rem;
+    color: var(--ink);
+    transition: box-shadow 200ms ease;
+  }
+
+  .archive-search::placeholder {
+    color: var(--muted);
+  }
+
+  .archive-search:focus {
+    outline: none;
+    box-shadow: 0 0 0 2px var(--accent);
+  }
+
+  .archive-search::-webkit-search-cancel-button {
+    display: none;
+  }
+</style>
+
 <script>
-  const archive = document.querySelector("[data-archive]");
+  const archive = document.querySelector<HTMLElement>("[data-archive]");
   if (archive) {
-    const pageSize = 5;
-    const input = archive.querySelector("[data-archive-query]");
-    const clear = archive.querySelector("[data-archive-clear]");
-    const form = archive.querySelector("[data-archive-search]");
-    const count = archive.querySelector("[data-archive-count]");
-    const empty = archive.querySelector("[data-archive-empty]");
-    const cards = [...archive.querySelectorAll("[data-post-card]")];
-    const moreWrap = archive.querySelector("[data-archive-more-wrap]");
-    const more = archive.querySelector("[data-archive-more]");
-    const pageText = archive.querySelector("[data-archive-page]");
-    const filterBar = archive.querySelector("[data-archive-filters]");
-    const menus = [...archive.querySelectorAll("[data-filter-menu]")];
-    const facets = [...archive.querySelectorAll("[data-filter]")];
-    const reset = archive.querySelector("[data-filter-reset]");
-    const emptyLabels = { cat: "All", tag: "Any" };
+    const pageSize = 9;
+    const $ = <T extends Element>(selector: string) => archive.querySelector<T>(selector)!;
+    const input = $<HTMLInputElement>("[data-archive-query]");
+    const clear = $<HTMLButtonElement>("[data-archive-clear]");
+    const form = $<HTMLFormElement>("[data-archive-search]");
+    const count = $<HTMLElement>("[data-archive-count]");
+    const empty = $<HTMLElement>("[data-archive-empty]");
+    const moreWrap = $<HTMLElement>("[data-archive-more-wrap]");
+    const more = $<HTMLButtonElement>("[data-archive-more]");
+    const pageText = $<HTMLElement>("[data-archive-page]");
+    const reset = $<HTMLButtonElement>("[data-filter-reset]");
+    const filterBar = $<HTMLElement>("[data-archive-filters]");
+    const cards = [...archive.querySelectorAll<HTMLElement>("[data-post-card]")];
+    const menus = [...archive.querySelectorAll<HTMLDetailsElement>("[data-filter-menu]")];
+    const facets = [...archive.querySelectorAll<HTMLAnchorElement>("[data-filter]")];
+    const emptyLabels: Record<string, string> = { cat: "All", tag: "Any" };
+
+    type State = { q: string; cat: string; tag: string; page: number };
+    type FilterKey = "cat" | "tag";
 
     /* An unknown value in the URL is dropped rather than emptying the list. */
-    const knownValue = (key, value) =>
+    const known = (key: FilterKey, value: string) =>
       !value || archive.querySelector(`[data-filter="${key}"][data-value="${CSS.escape(value)}"]`);
 
-    const stateFromUrl = () => {
+    const stateFromUrl = (): State => {
       const params = new URLSearchParams(window.location.search);
-      const cat = params.get("cat") || "";
-      const tag = params.get("tag") || "";
+      const cat = params.get("cat") ?? "";
+      const tag = params.get("tag") ?? "";
       return {
-        q: params.get("q") || "",
-        cat: knownValue("cat", cat) ? cat : "",
-        tag: knownValue("tag", tag) ? tag : "",
-        page: Math.max(1, Number.parseInt(params.get("page") || "1", 10) || 1),
+        q: params.get("q") ?? "",
+        cat: known("cat", cat) ? cat : "",
+        tag: known("tag", tag) ? tag : "",
+        page: Math.max(1, Number.parseInt(params.get("page") ?? "1", 10) || 1),
       };
     };
 
-    const closeMenus = (except = null) => {
-      menus.forEach((menu) => {
-        if (menu !== except) menu.removeAttribute("open");
-      });
-    };
-
-    /** Does this card survive `test`, a (possibly hypothetical) filter state? */
-    const matchesState = (card, test) => {
+    const matches = (card: HTMLElement, test: State) => {
       if (test.cat && card.dataset.category !== test.cat) return false;
-      if (test.tag && !(card.dataset.tags || "").split(" ").includes(test.tag)) return false;
-      if (test.q && !(card.dataset.search || "").includes(test.q)) return false;
-      return true;
+      if (test.tag && !(card.dataset.tags ?? "").split(" ").includes(test.tag)) return false;
+      const words = test.q.toLowerCase().split(/\s+/).filter(Boolean);
+      return words.every((word) => (card.dataset.search ?? "").includes(word));
     };
 
-    const writeUrl = (state) => {
+    /* Typing replaces the history entry, so Back skips partial queries. */
+    const writeUrl = (state: State, replace = false) => {
       const params = new URLSearchParams();
       if (state.q) params.set("q", state.q);
       if (state.cat) params.set("cat", state.cat);
       if (state.tag) params.set("tag", state.tag);
       if (state.page > 1) params.set("page", String(state.page));
       const query = params.toString();
-      history.pushState(state, "", query ? `/blog?${query}` : "/blog");
+      const url = query ? `/blog/?${query}` : "/blog/";
+      if (replace) history.replaceState(null, "", url);
+      else history.pushState(null, "", url);
     };
 
-    /* Each option is counted against the *other* active filters, so a row says what
-       choosing it would show. Options that would return nothing are dimmed rather
-       than removed, so the menu never changes length under the pointer. */
-    const renderFacets = (test) => {
+    const closeMenus = (except?: HTMLDetailsElement) =>
+      menus.forEach((menu) => menu !== except && menu.removeAttribute("open"));
+
+    /* Each option is counted against the other active filters, so a row says what choosing it would show. */
+    const renderFacets = (state: State) => {
       facets.forEach((facet) => {
-        const key = facet.dataset.filter;
-        const value = facet.dataset.value || "";
-        const selected = test[key] === value;
+        const key = facet.dataset.filter as FilterKey;
+        const value = facet.dataset.value ?? "";
+        const selected = state[key] === value;
         if (selected) facet.setAttribute("aria-current", "true");
         else facet.removeAttribute("aria-current");
-
-        const count = cards.filter((card) => matchesState(card, { ...test, [key]: value })).length;
-        const countNode = facet.querySelector("[data-facet-count]");
-        if (countNode) countNode.textContent = String(count);
-        facet.toggleAttribute("data-empty", count === 0 && !selected);
+        const total = cards.filter((card) => matches(card, { ...state, [key]: value })).length;
+        const node = facet.querySelector("[data-facet-count]");
+        if (node) node.textContent = String(total);
+        facet.toggleAttribute("data-empty", total === 0 && !selected);
       });
 
-      archive.querySelectorAll("[data-filter-label]").forEach((node) => {
-        const key = node.dataset.filterLabel;
-        const active = test[key];
-        const menu = node.closest("[data-filter-menu]");
-        if (menu) menu.toggleAttribute("data-active", Boolean(active));
+      archive.querySelectorAll<HTMLElement>("[data-filter-label]").forEach((node) => {
+        const key = node.dataset.filterLabel as FilterKey;
+        const active = state[key];
+        node.closest("[data-filter-menu]")?.toggleAttribute("data-active", Boolean(active));
         const label = archive
           .querySelector(`[data-filter="${key}"][data-value="${CSS.escape(active)}"] .facet-label`)
-          ?.textContent.trim();
+          ?.textContent?.trim();
         node.textContent = active && label ? label : emptyLabels[key];
       });
 
-      if (reset) reset.hidden = !(test.cat || test.tag);
+      reset.hidden = !(state.cat || state.tag);
     };
 
-    const render = (state, updateInput = true) => {
-      if (updateInput) input.value = state.q;
+    const render = (state: State, syncInput = true) => {
+      if (syncInput) input.value = state.q;
       clear.hidden = !state.q;
 
-      const test = { ...state, q: state.q.toLowerCase() };
-      const matches = cards.filter((card) => matchesState(card, test));
-
-      const visibleCount = Math.min(matches.length, state.page * pageSize);
+      const found = cards.filter((card) => matches(card, state));
+      const visible = Math.min(found.length, state.page * pageSize);
       cards.forEach((card) => (card.hidden = true));
-      matches.slice(0, visibleCount).forEach((card) => (card.hidden = false));
+      found.slice(0, visible).forEach((card) => (card.hidden = false));
 
-      count.textContent = `${matches.length} ${matches.length === 1 ? "result" : "results"}${state.q ? ` for "${state.q}"` : ""}`;
-      empty.hidden = matches.length > 0;
-
-      const totalPages = Math.max(1, Math.ceil(matches.length / pageSize));
-      moreWrap.hidden = visibleCount >= matches.length;
-      more.textContent = `Load more (${matches.length - visibleCount} remaining)`;
-      pageText.textContent = `Page ${state.page} of ${totalPages}`;
-
-      renderFacets(test);
+      count.textContent = `${found.length} ${found.length === 1 ? "result" : "results"}`;
+      empty.hidden = found.length > 0;
+      moreWrap.hidden = visible >= found.length;
+      more.textContent = `Show more (${found.length - visible} left)`;
+      pageText.textContent = `Showing ${visible} of ${found.length}`;
+      renderFacets(state);
     };
 
     let state = stateFromUrl();
     render(state);
 
+    const update = (next: Partial<State>, syncInput = true, replace = false) => {
+      state = { ...state, ...next };
+      writeUrl(state, replace);
+      render(state, syncInput);
+    };
+
     form.addEventListener("submit", (event) => {
       event.preventDefault();
-      state = { ...state, q: input.value.trim(), page: 1 };
-      writeUrl(state);
-      render(state, false);
+      update({ q: input.value.trim(), page: 1 }, false);
+    });
+
+    let typing: number | undefined;
+    input.addEventListener("input", () => {
+      window.clearTimeout(typing);
+      typing = window.setTimeout(
+        () => update({ q: input.value.trim(), page: 1 }, false, true),
+        180,
+      );
     });
 
     clear.addEventListener("click", () => {
-      state = { ...state, q: "", page: 1 };
-      writeUrl(state);
-      render(state);
+      update({ q: "", page: 1 });
+      input.focus();
     });
 
     facets.forEach((facet) => {
       facet.addEventListener("click", (event) => {
-        /* The rows are real links for the no-JS case; take over only when JS runs. */
         event.preventDefault();
-        const key = facet.dataset.filter;
-        const value = facet.dataset.value || "";
-        /* Choosing the active option again clears that filter. */
-        state = { ...state, [key]: state[key] === value ? "" : value, page: 1 };
-        writeUrl(state);
-        render(state);
+        const key = facet.dataset.filter as FilterKey;
+        const value = facet.dataset.value ?? "";
+        update({ [key]: state[key] === value ? "" : value, page: 1 });
         closeMenus();
       });
     });
 
-    reset?.addEventListener("click", () => {
-      state = { ...state, cat: "", tag: "", page: 1 };
-      writeUrl(state);
-      render(state);
+    reset.addEventListener("click", () => {
+      update({ cat: "", tag: "", page: 1 });
       closeMenus();
     });
 
-    /* One menu open at a time; clicking outside or pressing Escape closes it. */
-    menus.forEach((menu) => {
-      menu.addEventListener("toggle", () => {
-        if (menu.open) closeMenus(menu);
-      });
-    });
+    menus.forEach((menu) => menu.addEventListener("toggle", () => menu.open && closeMenus(menu)));
 
     document.addEventListener("click", (event) => {
-      const target = event.target instanceof Element ? event.target : null;
-      if (!target?.closest("[data-filter-menu]")) closeMenus();
+      if (!(event.target instanceof Element) || !event.target.closest("[data-filter-menu]")) {
+        closeMenus();
+      }
     });
 
-    filterBar?.addEventListener("keydown", (event) => {
+    filterBar.addEventListener("keydown", (event) => {
       if (event.key !== "Escape") return;
       const open = menus.find((menu) => menu.open);
       if (!open) return;
@@ -304,11 +348,7 @@ const tagOptions = tags
       open.querySelector("summary")?.focus();
     });
 
-    more.addEventListener("click", () => {
-      state = { ...state, page: state.page + 1 };
-      writeUrl(state);
-      render(state, false);
-    });
+    more.addEventListener("click", () => update({ page: state.page + 1 }, false));
 
     window.addEventListener("popstate", () => {
       state = stateFromUrl();
