@@ -76,6 +76,10 @@ npm run release:check
 
 See [CUSTOMIZATION.md](./CUSTOMIZATION.md) for site settings, authors, sections and tags, posts and their frontmatter, the homepage and its hero image, search and the archive, article pages, forms, the theme's design tokens, fonts, icons, and dark mode.
 
+## Responsive Cloudinary images
+
+Markdown and Astro images can be served from Cloudinary with explicit JXL, AVIF, and WebP `<picture>` fallbacks and Cloudinary-analyzed breakpoint widths. See [CLOUDINARY.md](./CLOUDINARY.md) for setup, the upload and breakpoint command (`npm run cloudinary:breakpoints`), and the Markdown shorthand.
+
 Set `siteConfig.siteUrl` in [src/config/site.ts](./src/config/site.ts) before building — canonical URLs, social images, the sitemap, the RSS feed, `robots.txt`, and the structured data are all derived from it. The build is static, so any host that serves a directory works: `vercel.json` is included for Vercel and `wrangler.jsonc` for Cloudflare Workers, and Netlify, GitHub Pages, and object storage behind a CDN need no configuration beyond `npm run build`.
 
 ## Content

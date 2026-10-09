@@ -604,6 +604,17 @@
     }
   }
 
+  /* Markdown images share the same responsive picture pipeline. */
+  .cloudinary-picture {
+    display: block;
+  }
+
+  .cloudinary-picture img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
   .figure-frame {
     display: block;
     width: 100%;

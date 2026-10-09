@@ -18,6 +18,9 @@ coverage
 .env*
 !.env.example
 
+# Temporary Cloudinary manifest writes
+src/data/*.tmp
+
 # Internal release/workflow notes
 RELEASE_CHECKLIST.md
 
