@@ -102,17 +102,17 @@ const schema = withBreadcrumbs(
   <article>
     <header>
       <div class="shell flex flex-col items-center pb-12 pt-12 text-center sm:pt-16">
-        <Breadcrumbs items={crumbs} class="rise flex justify-center [&_ol]:justify-center" />
+        <Breadcrumbs
+          items={crumbs}
+          class="rise flex justify-center max-sm:[&_li:last-child]:hidden [&_ol]:justify-center"
+        />
         <h1 class="serif rise mt-8 max-w-4xl text-headline font-normal" style="--rise-order: 1">
           {post.title}
         </h1>
         <p class="rise mt-6 max-w-2xl text-lead text-body" style="--rise-order: 2">
           {post.excerpt}
         </p>
-        <div
-          class="rise mt-9 flex flex-wrap items-center justify-center gap-x-5 gap-y-3"
-          style="--rise-order: 3"
-        >
+        <div class="rise mt-9 flex flex-col items-center gap-4" style="--rise-order: 3">
           {author && (
             <a href={authorUrl(author.slug)} class="group flex items-center gap-3 text-left">
               <Avatar author={author} size={44} />
@@ -122,27 +122,28 @@ const schema = withBreadcrumbs(
               </span>
             </a>
           )}
-          <span class="hidden h-8 w-px bg-line-strong sm:block" aria-hidden="true"></span>
-          <div class="meta justify-center">
-            <time datetime={isoDate(post.date)}>{formatDate(post.date)}</time>
-            {post.updated && (
-              <span class="hidden sm:inline">
-                Updated{" "}
-                <time datetime={isoDate(post.updated)}>{formatDate(post.updated, "short")}</time>
-              </span>
-            )}
-            <span>{post.readingTime} min read</span>
+          <div class="flex flex-wrap items-center justify-center gap-x-5 gap-y-3">
+            <div class="meta justify-center">
+              <time datetime={isoDate(post.date)}>{formatDate(post.date)}</time>
+              {post.updated && (
+                <span class="hidden sm:inline">
+                  Updated{" "}
+                  <time datetime={isoDate(post.updated)}>{formatDate(post.updated, "short")}</time>
+                </span>
+              )}
+              <span>{post.readingTime} min read</span>
+            </div>
+            <button
+              type="button"
+              class="btn btn-quiet btn-sm"
+              aria-haspopup="dialog"
+              data-share-open
+              hidden
+            >
+              <Icon name="social-share" class="size-3.5" />
+              Share
+            </button>
           </div>
-          <button
-            type="button"
-            class="btn btn-quiet btn-sm"
-            aria-haspopup="dialog"
-            data-share-open
-            hidden
-          >
-            <Icon name="social-share" class="size-3.5" />
-            Share
-          </button>
         </div>
       </div>
     </header>

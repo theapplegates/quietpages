@@ -2,6 +2,12 @@
 
 All notable changes to Quiet Pages are documented here.
 
+## Unreleased
+
+- The article byline shows the author on one row and the date, reading time, and Share button on a second row.
+- Breadcrumbs stay on one line and shorten the current page title to fit.
+- Article breadcrumbs leave out the post title on small screens.
+
 ## 3.0.0 - 2026-10-08
 
 - Redesigned the theme with a palette taken from the hero photograph: a mist-white canvas, pine-navy ink, a deep teal accent (`#2a6380`), and refined light and dark modes.
